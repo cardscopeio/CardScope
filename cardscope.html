@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CardScope - Premium Sports Cards Marketplace</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0f1419 0%, #1a2332 100%);
+            color: #e1e8ed;
+            min-height: 100vh;
+        }
+
+        header {
+            background: rgba(15, 20, 25, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-subtitle {
+            font-size: 0.75rem;
+            color: #8899a6;
+            margin-top: -0.25rem;
+        }
+
+        nav {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        nav a {
+            color: #8899a6;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        nav a:hover {
+            color: #667eea;
+        }
+
+        .search-bar {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #e1e8ed;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .search-input::placeholder {
+            color: #8899a6;
+        }
+
+        .filters {
+            max-width: 1400px;
+            margin: 0 auto 2rem;
+            padding: 0 2rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.75rem 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #8899a6;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .filter-btn:hover {
+            background: rgba(102, 126, 234, 0.1);
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: transparent;
+            color: white;
+        }
+
+        .cards-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem 4rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            border-color: #667eea;
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.2);
+        }
+
+        .card-image {
+            width: 100%;
+            aspect-ratio: 2.5 / 3.5;
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-image::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent 0%, rgba(102, 126, 234, 0.1) 100%);
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        .card-player {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #e1e8ed;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-details {
+            color: #8899a6;
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .card-year {
+            display: inline-block;
+            background: rgba(102, 126, 234, 0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: #667eea;
+            margin-bottom: 0.75rem;
+        }
+
+        .card-price {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-top: 1rem;
+        }
+
+        .card-condition {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .cards-container {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 1rem;
+                padding: 0 1rem 2rem;
+            }
+
+            .filters {
+                padding: 0 1rem;
+            }
+
+            .search-bar {
+                padding: 0 1rem;
+            }
+
+            header {
+                padding: 1rem;
+            }
+
+            nav {
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div>
+                <div class="logo">CardScope.io</div>
+                <div class="logo-subtitle">Premium Sports Card Marketplace</div>
+            </div>
+            <nav>
+                <a href="#browse">Browse</a>
+                <a href="#sell">Sell Cards</a>
+                <a href="#about">About</a>
+                <a href="#contact">Contact</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="search-bar">
+        <input type="text" class="search-input" placeholder="Search by player, team, year, or card type..." id="searchInput">
+    </div>
+
+    <div class="filters">
+        <button class="filter-btn active" data-filter="all">All Cards</button>
+        <button class="filter-btn" data-filter="basketball">Basketball</button>
+        <button class="filter-btn" data-filter="baseball">Baseball</button>
+        <button class="filter-btn" data-filter="football">Football</button>
+        <button class="filter-btn" data-filter="rookie">Rookie Cards</button>
+        <button class="filter-btn" data-filter="graded">Graded</button>
+    </div>
+
+    <div class="cards-container" id="cardsContainer"></div>
+
+    <script>
+        const cardsData = [
+            {
+                player: "LeBron James",
+                year: "2003",
+                brand: "Upper Deck",
+                type: "Rookie Card",
+                price: "$3,499",
+                sport: "basketball",
+                condition: "PSA 9",
+                emoji: "🏀"
+            },
+            {
+                player: "Mike Trout",
+                year: "2011",
+                brand: "Topps Chrome",
+                type: "Rookie Autograph",
+                price: "$8,750",
+                sport: "baseball",
+                condition: "PSA 10",
+                emoji: "⚾"
+            },
+            {
+                player: "Tom Brady",
+                year: "2000",
+                brand: "Playoff Contenders",
+                type: "Rookie Ticket Auto",
+                price: "$12,500",
+                sport: "football",
+                condition: "BGS 9",
+                emoji: "🏈"
+            },
+            {
+                player: "Giannis Antetokounmpo",
+                year: "2013",
+                brand: "Panini Prizm",
+                type: "Rookie Card",
+                price: "$1,850",
+                sport: "basketball",
+                condition: "PSA 10",
+                emoji: "🏀"
+            },
+            {
+                player: "Ronald Acuña Jr.",
+                year: "2018",
+                brand: "Topps Chrome",
+                type: "Rookie Autograph",
+                price: "$2,200",
+                sport: "baseball",
+                condition: "PSA 9",
+                emoji: "⚾"
+            },
+            {
+                player: "Patrick Mahomes",
+                year: "2017",
+                brand: "Panini Prizm",
+                type: "Rookie Card",
+                price: "$4,999",
+                sport: "football",
+                condition: "PSA 10",
+                emoji: "🏈"
+            },
+            {
+                player: "Luka Dončić",
+                year: "2018",
+                brand: "Panini Prizm",
+                type: "Rookie Card Silver",
+                price: "$3,250",
+                sport: "basketball",
+                condition: "PSA 10",
+                emoji: "🏀"
+            },
+            {
+                player: "Derek Jeter",
+                year: "1993",
+                brand: "SP",
+                type: "Rookie Card",
+                price: "$1,450",
+                sport: "baseball",
+                condition: "PSA 9",
+                emoji: "⚾"
+            },
+            {
+                player: "Justin Herbert",
+                year: "2020",
+                brand: "Panini Prizm",
+                type: "Rookie Autograph",
+                price: "$875",
+                sport: "football",
+                condition: "PSA 9",
+                emoji: "🏈"
+            },
+            {
+                player: "Stephen Curry",
+                year: "2009",
+                brand: "Panini",
+                type: "Rookie Card",
+                price: "$2,800",
+                sport: "basketball",
+                condition: "PSA 10",
+                emoji: "🏀"
+            },
+            {
+                player: "Shohei Ohtani",
+                year: "2018",
+                brand: "Topps Chrome",
+                type: "Rookie Card",
+                price: "$5,500",
+                sport: "baseball",
+                condition: "PSA 10",
+                emoji: "⚾"
+            },
+            {
+                player: "Josh Allen",
+                year: "2018",
+                brand: "Panini Prizm",
+                type: "Rookie Autograph",
+                price: "$1,650",
+                sport: "football",
+                condition: "PSA 9",
+                emoji: "🏈"
+            }
+        ];
+
+        let currentFilter = 'all';
+        let searchTerm = '';
+
+        function renderCards() {
+            const container = document.getElementById('cardsContainer');
+            let filteredCards = cardsData;
+
+            if (currentFilter !== 'all') {
+                if (currentFilter === 'rookie') {
+                    filteredCards = filteredCards.filter(card => card.type.toLowerCase().includes('rookie'));
+                } else if (currentFilter === 'graded') {
+                    filteredCards = filteredCards.filter(card => card.condition);
+                } else {
+                    filteredCards = filteredCards.filter(card => card.sport === currentFilter);
+                }
+            }
+
+            if (searchTerm) {
+                filteredCards = filteredCards.filter(card => 
+                    card.player.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    card.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    card.year.includes(searchTerm) ||
+                    card.type.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+            }
+
+            container.innerHTML = filteredCards.map(card => `
+                <div class="card">
+                    <div class="card-image">
+                        ${card.emoji}
+                    </div>
+                    <div class="card-content">
+                        <div class="card-player">${card.player}</div>
+                        <div class="card-details">${card.brand} • ${card.type}</div>
+                        <span class="card-year">${card.year}</span>
+                        ${card.condition ? `<span class="card-condition">${card.condition}</span>` : ''}
+                        <div class="card-price">${card.price}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentFilter = this.dataset.filter;
+                renderCards();
+            });
+        });
+
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            searchTerm = e.target.value;
+            renderCards();
+        });
+
+        renderCards();
+    </script>
+</body>
+</html>

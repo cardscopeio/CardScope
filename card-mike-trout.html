@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">Card Profile - CardScope.io</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0f1419 0%, #1a2332 100%);
+            color: #e1e8ed;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(102, 126, 234, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(118, 75, 162, 0.06) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        header {
+            background: rgba(15, 20, 25, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-subtitle {
+            font-size: 0.75rem;
+            color: #8899a6;
+            margin-top: -0.25rem;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        nav {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        nav a {
+            color: #8899a6;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        nav a:hover {
+            color: #667eea;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-profile {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 4rem;
+            margin-bottom: 4rem;
+        }
+
+        .card-showcase {
+            position: relative;
+        }
+
+        .card-main {
+            width: 100%;
+            aspect-ratio: 2.5 / 3.5;
+            background: linear-gradient(135deg, #1a1f2e 0%, #0f1419 100%);
+            border: 3px solid rgba(102, 126, 234, 0.4);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(102, 126, 234, 0.1) inset;
+        }
+
+        .card-main::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: 
+                linear-gradient(45deg, transparent 30%, rgba(102, 126, 234, 0.05) 50%, transparent 70%);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .card-info {
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .player-name {
+            font-size: 3.5rem;
+            line-height: 1.1;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+        }
+
+        .card-year-badge {
+            display: inline-block;
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 0.5rem 1.25rem;
+            background: rgba(102, 126, 234, 0.2);
+            border: 1px solid rgba(102, 126, 234, 0.4);
+            border-radius: 6px;
+            color: #667eea;
+            margin-bottom: 2rem;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .detail-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .detail-label {
+            font-size: 0.85rem;
+            color: #8899a6;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .detail-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #e8e6e3;
+        }
+
+        .price-section {
+            margin: 3rem 0;
+            padding: 2rem;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            border-radius: 16px;
+        }
+
+        .price-label {
+            font-size: 0.85rem;
+            color: #8899a6;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .price-value {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .description {
+            line-height: 1.8;
+            font-size: 1.1rem;
+            color: #c9d1d9;
+            margin: 2rem 0;
+        }
+
+        .specs-section {
+            margin-top: 4rem;
+        }
+
+        .section-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid rgba(102, 126, 234, 0.3);
+            padding-bottom: 0.5rem;
+        }
+
+        .spec-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .spec-row:last-child {
+            border-bottom: none;
+        }
+
+        .spec-key {
+            font-weight: 600;
+            color: #8899a6;
+        }
+
+        .spec-value {
+            color: #e8e6e3;
+            font-weight: 600;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 3rem;
+        }
+
+        .btn-primary {
+            flex: 1;
+            padding: 1.25rem 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            flex: 1;
+            padding: 1.25rem 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(102, 126, 234, 0.4);
+            border-radius: 12px;
+            color: #667eea;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .condition-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(34, 197, 94, 0.1) 100%);
+            border: 2px solid rgba(34, 197, 94, 0.4);
+            border-radius: 8px;
+            color: #22c55e;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .badge-dot {
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @media (max-width: 968px) {
+            .card-profile {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .player-name {
+                font-size: 2.5rem;
+            }
+
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+            }
+
+            nav {
+                gap: 1rem;
+            }
+
+            .header-content {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div>
+                <div class="logo">CardScope.io</div>
+                <div class="logo-subtitle">Premium Baseball Card Marketplace</div>
+            </div>
+            <nav>
+                <a href="cardscope.html">Browse</a>
+                <a href="#sell">Sell Cards</a>
+                <a href="#about">About</a>
+                <a href="#contact">Contact</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="card-profile">
+            <div class="card-showcase">
+                <div class="card-main" id="cardImage">
+                    ⚾
+                </div>
+            </div>
+
+            <div class="card-info">
+                <h1 class="player-name" id="playerName">Loading...</h1>
+                <div class="card-year-badge" id="yearBadge">2011</div>
+                <div id="conditionBadge"></div>
+
+                <p class="description" id="description">
+                    Loading card details...
+                </p>
+
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">Brand / Set</div>
+                        <div class="detail-value" id="brandValue">-</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Card Type</div>
+                        <div class="detail-value" id="typeValue">-</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Era</div>
+                        <div class="detail-value" id="eraValue">-</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Year</div>
+                        <div class="detail-value" id="yearValue">-</div>
+                    </div>
+                </div>
+
+                <div class="price-section">
+                    <div class="price-label">Current Market Price</div>
+                    <div class="price-value" id="priceValue">-</div>
+                </div>
+
+                <div class="cta-buttons">
+                    <button class="btn-primary">Make an Offer</button>
+                    <button class="btn-secondary">Contact Seller</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="specs-section">
+            <h2 class="section-title">Card Specifications</h2>
+            <div class="spec-row">
+                <span class="spec-key">Authentication</span>
+                <span class="spec-value" id="authValue">Professional Grading Service</span>
+            </div>
+            <div class="spec-row">
+                <span class="spec-key">Condition</span>
+                <span class="spec-value" id="conditionValue">-</span>
+            </div>
+            <div class="spec-row">
+                <span class="spec-key">Rarity</span>
+                <span class="spec-value" id="rarityValue">Limited Production</span>
+            </div>
+            <div class="spec-row">
+                <span class="spec-key">Investment Grade</span>
+                <span class="spec-value" id="investmentValue">Premium Collectible</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const cardsData = [
+            {
+                player: "Mike Trout",
+                year: "2011",
+                brand: "Topps Chrome",
+                type: "Rookie Autograph",
+                price: "$8,750",
+                era: "modern",
+                condition: "PSA 10",
+                emoji: "⚾",
+                description: "One of the most sought-after modern baseball cards, this Mike Trout rookie autograph from 2011 Topps Chrome represents the emergence of baseball's greatest player of his generation. Graded PSA 10, this card is in pristine gem mint condition with perfect centering, sharp corners, and a flawless signature."
+            },
+            {
+                player: "Ronald Acuña Jr.",
+                year: "2018",
+                brand: "Topps Chrome",
+                type: "Rookie Autograph",
+                price: "$2,200",
+                era: "modern",
+                condition: "PSA 9",
+                emoji: "⚾",
+                description: "Ronald Acuña Jr.'s explosive debut season made this 2018 Topps Chrome rookie autograph an instant classic. Graded PSA 9, this card features the young superstar's on-card signature and showcases his early promise as one of baseball's most dynamic players."
+            },
+            {
+                player: "Derek Jeter",
+                year: "1993",
+                brand: "SP",
+                type: "Rookie Card",
+                price: "$1,450",
+                era: "modern",
+                condition: "PSA 9",
+                emoji: "⚾",
+                description: "The Captain's flagship rookie card from 1993 SP is one of the most iconic cards of the 1990s. This PSA 9 example captures Derek Jeter at the beginning of his legendary career with the New York Yankees, before his five World Series championships and 3,000+ hits."
+            },
+            {
+                player: "Shohei Ohtani",
+                year: "2018",
+                brand: "Topps Chrome",
+                type: "Rookie Card",
+                price: "$5,500",
+                era: "modern",
+                condition: "PSA 10",
+                emoji: "⚾",
+                description: "A true unicorn in baseball history, Shohei Ohtani's 2018 Topps Chrome rookie card in PSA 10 represents the only player to excel as both an elite pitcher and power hitter in the modern era. This gem mint card has become one of the most valuable modern rookies."
+            },
+            {
+                player: "Mickey Mantle",
+                year: "1952",
+                brand: "Topps",
+                type: "Rookie Card",
+                price: "$85,000",
+                era: "vintage",
+                condition: "PSA 5",
+                emoji: "⚾",
+                description: "The holy grail of baseball cards. Mickey Mantle's 1952 Topps rookie is the most iconic card in the hobby, featuring the Yankees legend in his second year. Even in PSA 5 condition, this card commands massive premiums due to its legendary status and the difficulty of finding centered examples."
+            },
+            {
+                player: "Jackie Robinson",
+                year: "1948",
+                brand: "Leaf",
+                type: "Rookie Card",
+                price: "$45,000",
+                era: "vintage",
+                condition: "PSA 4",
+                emoji: "⚾",
+                description: "More than just a baseball card, this 1948 Leaf Jackie Robinson rookie represents a pivotal moment in American history. Robinson broke baseball's color barrier in 1947, and this card from his second season is one of the most historically significant cards in the hobby."
+            },
+            {
+                player: "Ken Griffey Jr.",
+                year: "1989",
+                brand: "Upper Deck",
+                type: "Rookie Card",
+                price: "$3,200",
+                era: "modern",
+                condition: "PSA 10",
+                emoji: "⚾",
+                description: "The most iconic card of the junk wax era, Ken Griffey Jr.'s 1989 Upper Deck #1 rookie card in PSA 10 remains highly desirable. Junior's sweet swing and infectious smile made him baseball's most marketable player of the 1990s, and this card launched Upper Deck as a premium brand."
+            },
+            {
+                player: "Willie Mays",
+                year: "1952",
+                brand: "Topps",
+                type: "Rookie Card",
+                price: "$28,500",
+                era: "vintage",
+                condition: "PSA 6",
+                emoji: "⚾",
+                description: "The Say Hey Kid's 1952 Topps rookie card is one of the most important vintage cards in existence. Willie Mays is widely considered one of the five greatest players ever, and this PSA 6 example from the legendary 1952 Topps set is a museum-quality piece of baseball history."
+            },
+            {
+                player: "Vladimir Guerrero Jr.",
+                year: "2019",
+                brand: "Topps Chrome",
+                type: "Rookie Autograph",
+                price: "$1,850",
+                era: "modern",
+                condition: "PSA 10",
+                emoji: "⚾",
+                description: "Following in his Hall of Fame father's footsteps, Vladimir Guerrero Jr.'s 2019 Topps Chrome rookie autograph in PSA 10 captures one of baseball's most exciting young sluggers. His powerful swing and consistent production make this a strong modern investment piece."
+            },
+            {
+                player: "Roberto Clemente",
+                year: "1955",
+                brand: "Topps",
+                type: "Rookie Card",
+                price: "$18,500",
+                era: "vintage",
+                condition: "PSA 5",
+                emoji: "⚾",
+                description: "Roberto Clemente's 1955 Topps rookie card honors one of baseball's most beloved humanitarian players. The Hall of Famer's tragic death while delivering earthquake relief supplies has made his cards even more meaningful to collectors. This PSA 5 is a cherished piece of baseball heritage."
+            },
+            {
+                player: "Fernando Tatis Jr.",
+                year: "2019",
+                brand: "Topps Chrome",
+                type: "Rookie Autograph",
+                price: "$1,200",
+                era: "modern",
+                condition: "PSA 9",
+                emoji: "⚾",
+                description: "Before controversy, Fernando Tatis Jr. burst onto the scene as one of baseball's most electrifying talents. This 2019 Topps Chrome rookie autograph in PSA 9 captures his tremendous potential and remains a polarizing but intriguing piece in the modern market."
+            },
+            {
+                player: "Hank Aaron",
+                year: "1954",
+                brand: "Topps",
+                type: "Rookie Card",
+                price: "$32,000",
+                era: "vintage",
+                condition: "PSA 6",
+                emoji: "⚾",
+                description: "Hammerin' Hank's 1954 Topps rookie card is a cornerstone of any serious vintage collection. Aaron's 755 home runs stood as the all-time record for decades, and his dignified pursuit of excellence on and off the field makes this PSA 6 rookie a prized possession."
+            },
+            {
+                player: "Bryce Harper",
+                year: "2012",
+                brand: "Bowman Chrome",
+                type: "Prospect Autograph",
+                price: "$2,400",
+                era: "modern",
+                condition: "PSA 10",
+                emoji: "⚾",
+                description: "The most hyped prospect since LeBron James, Bryce Harper's 2012 Bowman Chrome prospect autograph in PSA 10 captures the phenom before his MLB debut. His 2015 MVP season and consistent star power have kept this card relevant in the modern market."
+            },
+            {
+                player: "Sandy Koufax",
+                year: "1955",
+                brand: "Topps",
+                type: "Rookie Card",
+                price: "$24,000",
+                era: "vintage",
+                condition: "PSA 5",
+                emoji: "⚾",
+                description: "Sandy Koufax's 1955 Topps rookie card represents one of the greatest pitchers who ever lived. His dominant stretch from 1963-1966 included three Cy Young awards and four no-hitters. This PSA 5 rookie is a blue-chip investment in baseball history."
+            },
+            {
+                player: "Juan Soto",
+                year: "2018",
+                brand: "Topps Chrome",
+                type: "Rookie Autograph",
+                price: "$1,950",
+                era: "modern",
+                condition: "PSA 10",
+                emoji: "⚾",
+                description: "Juan Soto's advanced hitting approach and patient eye at the plate made him an instant star. This 2018 Topps Chrome rookie autograph in PSA 10 gem mint condition captures one of the game's most disciplined young hitters and a perennial MVP candidate."
+            },
+            {
+                player: "Pete Rose",
+                year: "1963",
+                brand: "Topps",
+                type: "Rookie Card",
+                price: "$8,500",
+                era: "vintage",
+                condition: "PSA 7",
+                emoji: "⚾",
+                description: "Charlie Hustle's 1963 Topps rookie card remains popular despite his controversial ban from baseball. Pete Rose's 4,256 career hits still stand as the all-time record, and this PSA 7 rookie card from the classic 1963 set is a snapshot of baseball's Hit King."
+            }
+        ];
+
+        function getCardFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('card');
+        }
+
+        function getCardById(id) {
+            return cardsData.find(card => {
+                const cardId = card.player.toLowerCase().replace(/[.\s]/g, '-');
+                return cardId === id;
+            });
+        }
+
+        function loadCard() {
+            const cardId = getCardFromUrl();
+            let card;
+            
+            if (cardId) {
+                card = getCardById(cardId);
+            }
+            
+            if (!card) {
+                card = cardsData[0];
+            }
+
+            document.getElementById('pageTitle').textContent = `${card.player} ${card.year} - CardScope.io`;
+            document.getElementById('playerName').textContent = card.player;
+            document.getElementById('yearBadge').textContent = card.year;
+            document.getElementById('cardImage').textContent = card.emoji;
+            document.getElementById('description').textContent = card.description;
+            document.getElementById('brandValue').textContent = card.brand;
+            document.getElementById('typeValue').textContent = card.type;
+            document.getElementById('eraValue').textContent = card.era.charAt(0).toUpperCase() + card.era.slice(1);
+            document.getElementById('yearValue').textContent = card.year;
+            document.getElementById('priceValue').textContent = card.price;
+            document.getElementById('conditionValue').textContent = card.condition;
+            document.getElementById('authValue').textContent = card.condition ? `Professional Grading Service (${card.condition.split(' ')[0]})` : 'Ungraded';
+            
+            if (card.condition) {
+                document.getElementById('conditionBadge').innerHTML = `
+                    <div class="condition-badge">
+                        <span class="badge-dot"></span>
+                        ${card.condition} Certified
+                    </div>
+                `;
+            }
+
+            const gradeNum = card.condition ? parseInt(card.condition.split(' ')[1]) : 0;
+            if (gradeNum >= 9) {
+                document.getElementById('rarityValue').textContent = 'Gem Mint - Population Limited';
+                document.getElementById('investmentValue').textContent = 'Museum Quality Investment';
+            } else if (gradeNum >= 7) {
+                document.getElementById('rarityValue').textContent = 'High Grade - Strong Population';
+                document.getElementById('investmentValue').textContent = 'Premium Investment Grade';
+            } else if (gradeNum >= 5) {
+                document.getElementById('rarityValue').textContent = 'Mid Grade - Available';
+                document.getElementById('investmentValue').textContent = 'Solid Collectible Grade';
+            } else {
+                document.getElementById('rarityValue').textContent = 'Variable Population';
+                document.getElementById('investmentValue').textContent = 'Entry Level Investment';
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', loadCard);
+    </script>
+</body>
+</html>

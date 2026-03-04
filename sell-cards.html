@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sell Your Cards - CardScope.io</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0f1419 0%, #1a2332 100%);
+            color: #e1e8ed;
+            min-height: 100vh;
+        }
+
+        header {
+            background: rgba(15, 20, 25, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-subtitle {
+            font-size: 0.75rem;
+            color: #8899a6;
+            margin-top: -0.25rem;
+        }
+
+        nav {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        nav a {
+            color: #8899a6;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        nav a:hover,
+        nav a.active {
+            color: #667eea;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .page-title {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+        }
+
+        .page-subtitle {
+            font-size: 1.1rem;
+            color: #8899a6;
+            line-height: 1.6;
+        }
+
+        .sell-form {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 3rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #e1e8ed;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid rgba(102, 126, 234, 0.3);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #e1e8ed;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .required {
+            color: #ef4444;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #e1e8ed;
+            font-size: 1rem;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .form-group select {
+            cursor: pointer;
+        }
+
+        .input-hint {
+            font-size: 0.85rem;
+            color: #8899a6;
+            margin-top: 0.5rem;
+        }
+
+        /* Image Upload Section */
+        .image-upload-container {
+            margin-bottom: 2rem;
+        }
+
+        .image-upload-zone {
+            border: 2px dashed rgba(102, 126, 234, 0.4);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            background: rgba(102, 126, 234, 0.05);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .image-upload-zone:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .image-upload-zone.dragover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.15);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .upload-text {
+            font-size: 1.1rem;
+            color: #e1e8ed;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-hint {
+            font-size: 0.9rem;
+            color: #8899a6;
+        }
+
+        #imageInput {
+            display: none;
+        }
+
+        .image-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .image-preview-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 10px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .image-preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .image-remove-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            width: 30px;
+            height: 30px;
+            background: rgba(239, 68, 68, 0.9);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.2s;
+        }
+
+        .image-remove-btn:hover {
+            background: #dc2626;
+            transform: scale(1.1);
+        }
+
+        .primary-badge {
+            position: absolute;
+            bottom: 0.5rem;
+            left: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 6px;
+        }
+
+        /* Price Input */
+        .price-input-wrapper {
+            position: relative;
+        }
+
+        .currency-symbol {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8899a6;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .price-input-wrapper input {
+            padding-left: 2.5rem;
+        }
+
+        /* Condition/Grade Toggle */
+        .condition-toggle {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #8899a6;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .toggle-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: transparent;
+            color: white;
+        }
+
+        /* Submit Section */
+        .submit-section {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .terms-checkbox {
+            display: flex;
+            align-items: start;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+            cursor: pointer;
+        }
+
+        .terms-checkbox input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-top: 2px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .terms-text {
+            color: #c9d1d9;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .submit-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn-submit {
+            flex: 2;
+            padding: 1.25rem 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-submit:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-draft {
+            flex: 1;
+            padding: 1.25rem 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(102, 126, 234, 0.4);
+            border-radius: 12px;
+            color: #667eea;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-draft:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .page-title {
+                font-size: 2rem;
+            }
+
+            .sell-form {
+                padding: 2rem 1.5rem;
+            }
+
+            .submit-buttons {
+                flex-direction: column;
+            }
+
+            nav {
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div>
+                <div class="logo">CardScope.io</div>
+                <div class="logo-subtitle">Premium Baseball Card Marketplace</div>
+            </div>
+            <nav>
+                <a href="cardscope.html">Browse</a>
+                <a href="sell-cards.html" class="active">Sell Cards</a>
+                <a href="#about">About</a>
+                <a href="#contact">Contact</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="page-header">
+            <h1 class="page-title">List Your Card for Sale</h1>
+            <p class="page-subtitle">Fill out the details below to list your baseball card on CardScope.io. Our team will review your listing within 24 hours.</p>
+        </div>
+
+        <form class="sell-form" id="sellForm" onsubmit="submitListing(event)">
+            <!-- Basic Information -->
+            <h2 class="section-title">Basic Information</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Player Name <span class="required">*</span></label>
+                    <input type="text" id="playerName" name="playerName" placeholder="Mike Trout" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Year <span class="required">*</span></label>
+                    <input type="number" id="year" name="year" placeholder="2011" min="1900" max="2025" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Brand / Set <span class="required">*</span></label>
+                    <input type="text" id="brand" name="brand" placeholder="Topps Chrome" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Card Type <span class="required">*</span></label>
+                    <select id="cardType" name="cardType" required>
+                        <option value="">Select type...</option>
+                        <option value="Rookie Card">Rookie Card</option>
+                        <option value="Rookie Autograph">Rookie Autograph</option>
+                        <option value="Autograph">Autograph</option>
+                        <option value="Base Card">Base Card</option>
+                        <option value="Insert">Insert</option>
+                        <option value="Parallel">Parallel</option>
+                        <option value="Relic">Relic</option>
+                        <option value="Patch">Patch</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Era <span class="required">*</span></label>
+                    <select id="era" name="era" required>
+                        <option value="">Select era...</option>
+                        <option value="vintage">Vintage (Pre-1980)</option>
+                        <option value="modern">Modern (1980-Present)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Card Number</label>
+                    <input type="text" id="cardNumber" name="cardNumber" placeholder="1, 250, RC-1">
+                    <div class="input-hint">Optional - if applicable</div>
+                </div>
+            </div>
+
+            <!-- Condition/Grading -->
+            <h2 class="section-title">Condition & Grading</h2>
+            
+            <div class="condition-toggle">
+                <button type="button" class="toggle-btn active" id="gradedBtn" onclick="toggleConditionType('graded')">Graded</button>
+                <button type="button" class="toggle-btn" id="ungradedBtn" onclick="toggleConditionType('ungraded')">Ungraded</button>
+            </div>
+
+            <div id="gradedSection">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Grading Company <span class="required">*</span></label>
+                        <select id="gradingCompany" name="gradingCompany">
+                            <option value="">Select company...</option>
+                            <option value="PSA">PSA</option>
+                            <option value="BGS">BGS (Beckett)</option>
+                            <option value="SGC">SGC</option>
+                            <option value="CGC">CGC</option>
+                            <option value="HGA">HGA</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Grade <span class="required">*</span></label>
+                        <select id="grade" name="grade">
+                            <option value="">Select grade...</option>
+                            <option value="10">10 - Gem Mint</option>
+                            <option value="9.5">9.5 - Gem Mint+</option>
+                            <option value="9">9 - Mint</option>
+                            <option value="8.5">8.5 - NM-MT+</option>
+                            <option value="8">8 - NM-MT</option>
+                            <option value="7.5">7.5 - NM+</option>
+                            <option value="7">7 - Near Mint</option>
+                            <option value="6.5">6.5 - EX-MT+</option>
+                            <option value="6">6 - EX-MT</option>
+                            <option value="5.5">5.5 - EX+</option>
+                            <option value="5">5 - Excellent</option>
+                            <option value="4.5">4.5 - VG-EX+</option>
+                            <option value="4">4 - VG-EX</option>
+                            <option value="3.5">3.5 - VG+</option>
+                            <option value="3">3 - Very Good</option>
+                            <option value="2.5">2.5 - Good+</option>
+                            <option value="2">2 - Good</option>
+                            <option value="1.5">1.5 - Fair</option>
+                            <option value="1">1 - Poor</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label>Certification Number</label>
+                        <input type="text" id="certNumber" name="certNumber" placeholder="12345678">
+                        <div class="input-hint">Optional - helps verify authenticity</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="ungradedSection" style="display: none;">
+                <div class="form-group">
+                    <label>Condition Description <span class="required">*</span></label>
+                    <select id="ungradedCondition" name="ungradedCondition">
+                        <option value="">Select condition...</option>
+                        <option value="Mint">Mint</option>
+                        <option value="Near Mint">Near Mint</option>
+                        <option value="Excellent">Excellent</option>
+                        <option value="Very Good">Very Good</option>
+                        <option value="Good">Good</option>
+                        <option value="Fair">Fair</option>
+                        <option value="Poor">Poor</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Pricing -->
+            <h2 class="section-title">Pricing</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Asking Price <span class="required">*</span></label>
+                    <div class="price-input-wrapper">
+                        <span class="currency-symbol">$</span>
+                        <input type="number" id="price" name="price" placeholder="8750" min="1" step="1" required>
+                    </div>
+                    <div class="input-hint">Enter amount in USD</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Accept Offers?</label>
+                    <select id="acceptOffers" name="acceptOffers">
+                        <option value="yes">Yes - Open to Offers</option>
+                        <option value="no">No - Firm Price</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Images -->
+            <h2 class="section-title">Card Images</h2>
+            <div class="image-upload-container">
+                <div class="image-upload-zone" id="uploadZone" onclick="document.getElementById('imageInput').click()">
+                    <div class="upload-icon">📸</div>
+                    <div class="upload-text">Click to upload or drag and drop</div>
+                    <div class="upload-hint">Upload up to 10 images (JPG, PNG) - First image will be the primary</div>
+                </div>
+                <input type="file" id="imageInput" multiple accept="image/*" onchange="handleImageSelect(event)">
+                
+                <div class="image-preview-grid" id="imagePreviewGrid"></div>
+            </div>
+
+            <!-- Description -->
+            <h2 class="section-title">Description</h2>
+            <div class="form-group full-width">
+                <label>Card Description <span class="required">*</span></label>
+                <textarea id="description" name="description" placeholder="Describe your card's condition, any notable features, centering, corners, edges, surface quality, etc..." required></textarea>
+                <div class="input-hint">Provide detailed information to help potential buyers</div>
+            </div>
+
+            <!-- Submit -->
+            <div class="submit-section">
+                <label class="terms-checkbox">
+                    <input type="checkbox" id="termsAgree" required>
+                    <span class="terms-text">I certify that I own this card and that all information provided is accurate. I agree to CardScope.io's selling terms and conditions, including the 5% commission fee on successful sales.</span>
+                </label>
+
+                <div class="submit-buttons">
+                    <button type="button" class="btn-draft" onclick="saveDraft()">Save as Draft</button>
+                    <button type="submit" class="btn-submit" id="submitBtn">Submit Listing for Review</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        let uploadedImages = [];
+        let conditionType = 'graded';
+
+        // Image Upload Handling
+        function handleImageSelect(event) {
+            const files = Array.from(event.target.files);
+            
+            if (uploadedImages.length + files.length > 10) {
+                alert('Maximum 10 images allowed');
+                return;
+            }
+
+            files.forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        uploadedImages.push({
+                            file: file,
+                            dataUrl: e.target.result,
+                            isPrimary: uploadedImages.length === 0
+                        });
+                        renderImagePreviews();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Reset input
+            event.target.value = '';
+        }
+
+        function renderImagePreviews() {
+            const grid = document.getElementById('imagePreviewGrid');
+            grid.innerHTML = uploadedImages.map((img, index) => `
+                <div class="image-preview-item">
+                    <img src="${img.dataUrl}" alt="Card image ${index + 1}">
+                    <button type="button" class="image-remove-btn" onclick="removeImage(${index})" title="Remove image">×</button>
+                    ${img.isPrimary ? '<div class="primary-badge">Primary</div>' : ''}
+                </div>
+            `).join('');
+        }
+
+        function removeImage(index) {
+            uploadedImages.splice(index, 1);
+            
+            // If we removed the primary image, make the first remaining image primary
+            if (uploadedImages.length > 0) {
+                uploadedImages[0].isPrimary = true;
+            }
+            
+            renderImagePreviews();
+        }
+
+        // Drag and Drop
+        const uploadZone = document.getElementById('uploadZone');
+
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            
+            const files = Array.from(e.dataTransfer.files);
+            handleImageSelect({ target: { files }, preventDefault: () => {} });
+        });
+
+        // Condition Toggle
+        function toggleConditionType(type) {
+            conditionType = type;
+            
+            document.getElementById('gradedBtn').classList.toggle('active', type === 'graded');
+            document.getElementById('ungradedBtn').classList.toggle('active', type === 'ungraded');
+            
+            document.getElementById('gradedSection').style.display = type === 'graded' ? 'block' : 'none';
+            document.getElementById('ungradedSection').style.display = type === 'ungraded' ? 'block' : 'none';
+
+            // Update required fields
+            if (type === 'graded') {
+                document.getElementById('gradingCompany').required = true;
+                document.getElementById('grade').required = true;
+                document.getElementById('ungradedCondition').required = false;
+            } else {
+                document.getElementById('gradingCompany').required = false;
+                document.getElementById('grade').required = false;
+                document.getElementById('ungradedCondition').required = true;
+            }
+        }
+
+        // Form Submission
+        function submitListing(event) {
+            event.preventDefault();
+
+            if (uploadedImages.length === 0) {
+                alert('Please upload at least one image of your card');
+                return;
+            }
+
+            const formData = {
+                playerName: document.getElementById('playerName').value,
+                year: document.getElementById('year').value,
+                brand: document.getElementById('brand').value,
+                cardType: document.getElementById('cardType').value,
+                era: document.getElementById('era').value,
+                cardNumber: document.getElementById('cardNumber').value,
+                conditionType: conditionType,
+                gradingCompany: conditionType === 'graded' ? document.getElementById('gradingCompany').value : null,
+                grade: conditionType === 'graded' ? document.getElementById('grade').value : null,
+                certNumber: document.getElementById('certNumber').value,
+                ungradedCondition: conditionType === 'ungraded' ? document.getElementById('ungradedCondition').value : null,
+                price: document.getElementById('price').value,
+                acceptOffers: document.getElementById('acceptOffers').value,
+                description: document.getElementById('description').value,
+                images: uploadedImages.length
+            };
+
+            console.log('Listing submitted:', formData);
+            console.log('Images:', uploadedImages);
+
+            // Show success message
+            alert('✓ Listing submitted successfully! Our team will review your card within 24 hours. You will receive a confirmation email shortly.');
+
+            // In a real app, you would send this to a server
+            // fetch('/api/submit-listing', { method: 'POST', body: JSON.stringify(formData) })
+
+            // Reset form
+            document.getElementById('sellForm').reset();
+            uploadedImages = [];
+            renderImagePreviews();
+        }
+
+        function saveDraft() {
+            const formData = new FormData(document.getElementById('sellForm'));
+            console.log('Draft saved:', Object.fromEntries(formData));
+            alert('Draft saved successfully! You can come back to finish your listing later.');
+        }
+    </script>
+</body>
+</html>
