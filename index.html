@@ -104,6 +104,19 @@
             flex-wrap: wrap;
         }
 
+        .cards-header {
+            max-width: 1400px;
+            margin: 0 auto 1.5rem;
+            padding: 0 2rem;
+            color: #8899a6;
+            font-size: 0.95rem;
+        }
+
+        .cards-header .highlight {
+            color: #22c55e;
+            font-weight: 600;
+        }
+
         .filter-btn {
             padding: 0.75rem 1.5rem;
             background: rgba(255, 255, 255, 0.05);
@@ -169,6 +182,26 @@
             position: absolute;
             inset: 0;
             background: linear-gradient(135deg, transparent 0%, rgba(102, 126, 234, 0.1) 100%);
+        }
+
+        .new-badge {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 700;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
+            animation: newBadgePulse 2s ease-in-out infinite;
+        }
+
+        @keyframes newBadgePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
         }
 
         .card-content {
@@ -247,13 +280,15 @@
 <body>
     <header>
         <div class="header-content">
-            <div>
-                <div class="logo">CardScope.io</div>
-                <div class="logo-subtitle">Premium Sports Card Marketplace</div>
-            </div>
+            <a href="index.html" style="text-decoration: none;">
+                <div>
+                    <div class="logo">CardScope.io</div>
+                    <div class="logo-subtitle">Premium Baseball Card Marketplace</div>
+                </div>
+            </a>
             <nav>
-                <a href="#browse">Browse</a>
-                <a href="sell.html">Sell Cards</a>
+                <a href="index.html">Browse</a>
+                <a href="sell-cards.html">Sell Cards</a>
                 <a href="#about">About</a>
                 <a href="#contact">Contact</a>
             </nav>
@@ -261,61 +296,33 @@
     </header>
 
     <div class="search-bar">
-        <input type="text" class="search-input" placeholder="Search by player, team, year, or card type..." id="searchInput">
+        <input type="text" class="search-input" placeholder="Search by player, team, year, set, or card type..." id="searchInput">
     </div>
 
     <div class="filters">
         <button class="filter-btn active" data-filter="all">All Cards</button>
-        <button class="filter-btn" data-filter="basketball">Basketball</button>
-        <button class="filter-btn" data-filter="baseball">Baseball</button>
-        <button class="filter-btn" data-filter="football">Football</button>
         <button class="filter-btn" data-filter="rookie">Rookie Cards</button>
+        <button class="filter-btn" data-filter="vintage">Vintage</button>
+        <button class="filter-btn" data-filter="modern">Modern</button>
         <button class="filter-btn" data-filter="graded">Graded</button>
+        <button class="filter-btn" data-filter="autograph">Autographs</button>
     </div>
+
+    <div class="cards-header" id="cardsHeader"></div>
 
     <div class="cards-container" id="cardsContainer"></div>
 
     <script>
-        const cardsData = [
-            {
-                player: "LeBron James",
-                year: "2003",
-                brand: "Upper Deck",
-                type: "Rookie Card",
-                price: "$3,499",
-                sport: "basketball",
-                condition: "PSA 9",
-                emoji: "🏀"
-            },
+        const defaultCards = [
             {
                 player: "Mike Trout",
                 year: "2011",
                 brand: "Topps Chrome",
                 type: "Rookie Autograph",
                 price: "$8,750",
-                sport: "baseball",
+                era: "modern",
                 condition: "PSA 10",
                 emoji: "⚾"
-            },
-            {
-                player: "Tom Brady",
-                year: "2000",
-                brand: "Playoff Contenders",
-                type: "Rookie Ticket Auto",
-                price: "$12,500",
-                sport: "football",
-                condition: "BGS 9",
-                emoji: "🏈"
-            },
-            {
-                player: "Giannis Antetokounmpo",
-                year: "2013",
-                brand: "Panini Prizm",
-                type: "Rookie Card",
-                price: "$1,850",
-                sport: "basketball",
-                condition: "PSA 10",
-                emoji: "🏀"
             },
             {
                 player: "Ronald Acuña Jr.",
@@ -323,29 +330,9 @@
                 brand: "Topps Chrome",
                 type: "Rookie Autograph",
                 price: "$2,200",
-                sport: "baseball",
+                era: "modern",
                 condition: "PSA 9",
                 emoji: "⚾"
-            },
-            {
-                player: "Patrick Mahomes",
-                year: "2017",
-                brand: "Panini Prizm",
-                type: "Rookie Card",
-                price: "$4,999",
-                sport: "football",
-                condition: "PSA 10",
-                emoji: "🏈"
-            },
-            {
-                player: "Luka Dončić",
-                year: "2018",
-                brand: "Panini Prizm",
-                type: "Rookie Card Silver",
-                price: "$3,250",
-                sport: "basketball",
-                condition: "PSA 10",
-                emoji: "🏀"
             },
             {
                 player: "Derek Jeter",
@@ -353,29 +340,9 @@
                 brand: "SP",
                 type: "Rookie Card",
                 price: "$1,450",
-                sport: "baseball",
+                era: "modern",
                 condition: "PSA 9",
                 emoji: "⚾"
-            },
-            {
-                player: "Justin Herbert",
-                year: "2020",
-                brand: "Panini Prizm",
-                type: "Rookie Autograph",
-                price: "$875",
-                sport: "football",
-                condition: "PSA 9",
-                emoji: "🏈"
-            },
-            {
-                player: "Stephen Curry",
-                year: "2009",
-                brand: "Panini",
-                type: "Rookie Card",
-                price: "$2,800",
-                sport: "basketball",
-                condition: "PSA 10",
-                emoji: "🏀"
             },
             {
                 player: "Shohei Ohtani",
@@ -383,27 +350,147 @@
                 brand: "Topps Chrome",
                 type: "Rookie Card",
                 price: "$5,500",
-                sport: "baseball",
+                era: "modern",
                 condition: "PSA 10",
                 emoji: "⚾"
             },
             {
-                player: "Josh Allen",
-                year: "2018",
-                brand: "Panini Prizm",
+                player: "Mickey Mantle",
+                year: "1952",
+                brand: "Topps",
+                type: "Rookie Card",
+                price: "$85,000",
+                era: "vintage",
+                condition: "PSA 5",
+                emoji: "⚾"
+            },
+            {
+                player: "Jackie Robinson",
+                year: "1948",
+                brand: "Leaf",
+                type: "Rookie Card",
+                price: "$45,000",
+                era: "vintage",
+                condition: "PSA 4",
+                emoji: "⚾"
+            },
+            {
+                player: "Ken Griffey Jr.",
+                year: "1989",
+                brand: "Upper Deck",
+                type: "Rookie Card",
+                price: "$3,200",
+                era: "modern",
+                condition: "PSA 10",
+                emoji: "⚾"
+            },
+            {
+                player: "Willie Mays",
+                year: "1952",
+                brand: "Topps",
+                type: "Rookie Card",
+                price: "$28,500",
+                era: "vintage",
+                condition: "PSA 6",
+                emoji: "⚾"
+            },
+            {
+                player: "Vladimir Guerrero Jr.",
+                year: "2019",
+                brand: "Topps Chrome",
                 type: "Rookie Autograph",
-                price: "$1,650",
-                sport: "football",
+                price: "$1,850",
+                era: "modern",
+                condition: "PSA 10",
+                emoji: "⚾"
+            },
+            {
+                player: "Roberto Clemente",
+                year: "1955",
+                brand: "Topps",
+                type: "Rookie Card",
+                price: "$18,500",
+                era: "vintage",
+                condition: "PSA 5",
+                emoji: "⚾"
+            },
+            {
+                player: "Fernando Tatis Jr.",
+                year: "2019",
+                brand: "Topps Chrome",
+                type: "Rookie Autograph",
+                price: "$1,200",
+                era: "modern",
                 condition: "PSA 9",
-                emoji: "🏈"
+                emoji: "⚾"
+            },
+            {
+                player: "Hank Aaron",
+                year: "1954",
+                brand: "Topps",
+                type: "Rookie Card",
+                price: "$32,000",
+                era: "vintage",
+                condition: "PSA 6",
+                emoji: "⚾"
+            },
+            {
+                player: "Bryce Harper",
+                year: "2012",
+                brand: "Bowman Chrome",
+                type: "Prospect Autograph",
+                price: "$2,400",
+                era: "modern",
+                condition: "PSA 10",
+                emoji: "⚾"
+            },
+            {
+                player: "Sandy Koufax",
+                year: "1955",
+                brand: "Topps",
+                type: "Rookie Card",
+                price: "$24,000",
+                era: "vintage",
+                condition: "PSA 5",
+                emoji: "⚾"
+            },
+            {
+                player: "Juan Soto",
+                year: "2018",
+                brand: "Topps Chrome",
+                type: "Rookie Autograph",
+                price: "$1,950",
+                era: "modern",
+                condition: "PSA 10",
+                emoji: "⚾"
+            },
+            {
+                player: "Pete Rose",
+                year: "1963",
+                brand: "Topps",
+                type: "Rookie Card",
+                price: "$8,500",
+                era: "vintage",
+                condition: "PSA 7",
+                emoji: "⚾"
             }
         ];
+
+        // Load user-submitted cards from localStorage
+        function loadUserCards() {
+            const stored = localStorage.getItem('userCards');
+            return stored ? JSON.parse(stored) : [];
+        }
+
+        // Merge default cards with user-submitted cards
+        let cardsData = [...loadUserCards(), ...defaultCards];
 
         let currentFilter = 'all';
         let searchTerm = '';
 
         function renderCards() {
             const container = document.getElementById('cardsContainer');
+            const header = document.getElementById('cardsHeader');
             let filteredCards = cardsData;
 
             if (currentFilter !== 'all') {
@@ -411,8 +498,12 @@
                     filteredCards = filteredCards.filter(card => card.type.toLowerCase().includes('rookie'));
                 } else if (currentFilter === 'graded') {
                     filteredCards = filteredCards.filter(card => card.condition);
-                } else {
-                    filteredCards = filteredCards.filter(card => card.sport === currentFilter);
+                } else if (currentFilter === 'autograph') {
+                    filteredCards = filteredCards.filter(card => card.type.toLowerCase().includes('autograph'));
+                } else if (currentFilter === 'vintage') {
+                    filteredCards = filteredCards.filter(card => card.era === 'vintage');
+                } else if (currentFilter === 'modern') {
+                    filteredCards = filteredCards.filter(card => card.era === 'modern');
                 }
             }
 
@@ -425,10 +516,19 @@
                 );
             }
 
-            container.innerHTML = filteredCards.map(card => `
-                <div class="card">
+            // Update header
+            const userCardCount = cardsData.filter(card => card.isUserSubmitted).length;
+            if (userCardCount > 0) {
+                header.innerHTML = `Showing ${filteredCards.length} cards • <span class="highlight">${userCardCount} new user listing${userCardCount > 1 ? 's' : ''}</span>`;
+            } else {
+                header.innerHTML = `Showing ${filteredCards.length} cards`;
+            }
+
+            container.innerHTML = filteredCards.map((card, index) => `
+                <div class="card" onclick="viewCard(${cardsData.indexOf(card)})">
                     <div class="card-image">
                         ${card.emoji}
+                        ${card.isUserSubmitted ? '<span class="new-badge">NEW</span>' : ''}
                     </div>
                     <div class="card-content">
                         <div class="card-player">${card.player}</div>
@@ -439,6 +539,12 @@
                     </div>
                 </div>
             `).join('');
+        }
+
+        function viewCard(index) {
+            const card = cardsData[index];
+            const cardId = card.player.toLowerCase().replace(/[.\s]/g, '-');
+            window.location.href = `card-${cardId}.html?card=${cardId}`;
         }
 
         document.querySelectorAll('.filter-btn').forEach(btn => {
