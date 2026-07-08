@@ -400,178 +400,11 @@
 
     <div class="cards-container" id="cardsContainer"></div>
 
+    <script src="cards-data.js"></script>
     <script>
-        const defaultCards = [
-            {
-                player: "Mike Trout",
-                year: "2011",
-                brand: "Topps Chrome",
-                type: "Rookie Autograph",
-                price: "$8,750",
-                era: "modern",
-                condition: "PSA 10",
-                emoji: "⚾"
-            },
-            {
-                player: "Ronald Acuña Jr.",
-                year: "2018",
-                brand: "Topps Chrome",
-                type: "Rookie Autograph",
-                price: "$2,200",
-                era: "modern",
-                condition: "PSA 9",
-                emoji: "⚾"
-            },
-            {
-                player: "Derek Jeter",
-                year: "1993",
-                brand: "SP",
-                type: "Rookie Card",
-                price: "$1,450",
-                era: "modern",
-                condition: "PSA 9",
-                emoji: "⚾"
-            },
-            {
-                player: "Shohei Ohtani",
-                year: "2018",
-                brand: "Topps Chrome",
-                type: "Rookie Card",
-                price: "$5,500",
-                era: "modern",
-                condition: "PSA 10",
-                emoji: "⚾"
-            },
-            {
-                player: "Mickey Mantle",
-                year: "1952",
-                brand: "Topps",
-                type: "Rookie Card",
-                price: "$85,000",
-                era: "vintage",
-                condition: "PSA 5",
-                emoji: "⚾"
-            },
-            {
-                player: "Jackie Robinson",
-                year: "1948",
-                brand: "Leaf",
-                type: "Rookie Card",
-                price: "$45,000",
-                era: "vintage",
-                condition: "PSA 4",
-                emoji: "⚾"
-            },
-            {
-                player: "Ken Griffey Jr.",
-                year: "1989",
-                brand: "Upper Deck",
-                type: "Rookie Card",
-                price: "$3,200",
-                era: "modern",
-                condition: "PSA 10",
-                emoji: "⚾"
-            },
-            {
-                player: "Willie Mays",
-                year: "1952",
-                brand: "Topps",
-                type: "Rookie Card",
-                price: "$28,500",
-                era: "vintage",
-                condition: "PSA 6",
-                emoji: "⚾"
-            },
-            {
-                player: "Vladimir Guerrero Jr.",
-                year: "2019",
-                brand: "Topps Chrome",
-                type: "Rookie Autograph",
-                price: "$1,850",
-                era: "modern",
-                condition: "PSA 10",
-                emoji: "⚾"
-            },
-            {
-                player: "Roberto Clemente",
-                year: "1955",
-                brand: "Topps",
-                type: "Rookie Card",
-                price: "$18,500",
-                era: "vintage",
-                condition: "PSA 5",
-                emoji: "⚾"
-            },
-            {
-                player: "Fernando Tatis Jr.",
-                year: "2019",
-                brand: "Topps Chrome",
-                type: "Rookie Autograph",
-                price: "$1,200",
-                era: "modern",
-                condition: "PSA 9",
-                emoji: "⚾"
-            },
-            {
-                player: "Hank Aaron",
-                year: "1954",
-                brand: "Topps",
-                type: "Rookie Card",
-                price: "$32,000",
-                era: "vintage",
-                condition: "PSA 6",
-                emoji: "⚾"
-            },
-            {
-                player: "Bryce Harper",
-                year: "2012",
-                brand: "Bowman Chrome",
-                type: "Prospect Autograph",
-                price: "$2,400",
-                era: "modern",
-                condition: "PSA 10",
-                emoji: "⚾"
-            },
-            {
-                player: "Sandy Koufax",
-                year: "1955",
-                brand: "Topps",
-                type: "Rookie Card",
-                price: "$24,000",
-                era: "vintage",
-                condition: "PSA 5",
-                emoji: "⚾"
-            },
-            {
-                player: "Juan Soto",
-                year: "2018",
-                brand: "Topps Chrome",
-                type: "Rookie Autograph",
-                price: "$1,950",
-                era: "modern",
-                condition: "PSA 10",
-                emoji: "⚾"
-            },
-            {
-                player: "Pete Rose",
-                year: "1963",
-                brand: "Topps",
-                type: "Rookie Card",
-                price: "$8,500",
-                era: "vintage",
-                condition: "PSA 7",
-                emoji: "⚾"
-            }
-        ];
-
-        // Load user-submitted cards from localStorage
-        function loadUserCards() {
-            const stored = localStorage.getItem('userCards');
-            return stored ? JSON.parse(stored) : [];
-        }
-
-        // Merge default cards with user-submitted cards
-        let cardsData = [...loadUserCards(), ...defaultCards];
+        // Card data comes from cards-data.js (shared with card.html) so the
+        // demo catalog and user-submitted listings only need to be defined once.
+        let cardsData = getAllCards();
 
         let currentFilter = 'all';
         let searchTerm = '';
@@ -631,8 +464,8 @@
 
         function viewCard(index) {
             const card = cardsData[index];
-            const cardId = card.player.toLowerCase().replace(/[.\s]/g, '-');
-            window.location.href = `card-${cardId}.html?card=${cardId}`;
+            const cardId = cardSlug(card);
+            window.location.href = `card.html?card=${cardId}`;
         }
 
         document.querySelectorAll('.filter-btn').forEach(btn => {

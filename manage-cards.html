@@ -251,7 +251,7 @@
                 <div class="stat-label">User Listings</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value" id="totalCardCount">16</div>
+                <div class="stat-value" id="totalCardCount">0</div>
                 <div class="stat-label">Total Cards</div>
             </div>
         </div>
@@ -268,13 +268,13 @@
         </div>
     </div>
 
+    <script src="cards-data.js"></script>
     <script>
         function loadCards() {
-            const stored = localStorage.getItem('userCards');
-            const userCards = stored ? JSON.parse(stored) : [];
+            const userCards = loadUserCards();
 
             document.getElementById('userCardCount').textContent = userCards.length;
-            document.getElementById('totalCardCount').textContent = 16 + userCards.length;
+            document.getElementById('totalCardCount').textContent = defaultCards.length + userCards.length;
 
             const cardsList = document.getElementById('cardsList');
 
