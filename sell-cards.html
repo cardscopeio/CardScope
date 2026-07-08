@@ -675,16 +675,30 @@
 
             <!-- Images -->
             <h2 class="section-title">Card Images</h2>
-            <div class="image-upload-container">
-                <div class="image-upload-zone" id="uploadZone" onclick="document.getElementById('imageInput').click()">
-                    <div class="upload-icon">📸</div>
-                    <div class="upload-text">Click to upload or drag and drop</div>
-                    <div class="upload-hint">Upload up to 10 images (JPG, PNG) - First image will be the primary</div>
+            <div class="form-grid">
+                <div class="image-upload-container">
+                    <label>Front of Card <span class="required">*</span></label>
+                    <div class="image-upload-zone" id="frontUploadZone" onclick="document.getElementById('frontImageInput').click()">
+                        <div class="upload-icon">📸</div>
+                        <div class="upload-text">Click to upload or drag and drop</div>
+                        <div class="upload-hint">JPG or PNG</div>
+                    </div>
+                    <input type="file" id="frontImageInput" accept="image/*" onchange="handleImageSelect(event, 'front')">
+                    <div class="image-preview-grid" id="frontImagePreview"></div>
                 </div>
-                <input type="file" id="imageInput" multiple accept="image/*" onchange="handleImageSelect(event)">
-                
-                <div class="image-preview-grid" id="imagePreviewGrid"></div>
+
+                <div class="image-upload-container">
+                    <label>Back of Card <span class="required">*</span></label>
+                    <div class="image-upload-zone" id="backUploadZone" onclick="document.getElementById('backImageInput').click()">
+                        <div class="upload-icon">📸</div>
+                        <div class="upload-text">Click to upload or drag and drop</div>
+                        <div class="upload-hint">JPG or PNG</div>
+                    </div>
+                    <input type="file" id="backImageInput" accept="image/*" onchange="handleImageSelect(event, 'back')">
+                    <div class="image-preview-grid" id="backImagePreview"></div>
+                </div>
             </div>
+            <div class="input-hint" style="margin-bottom: 2rem;">Front and back images power the hover-to-flip preview shown on the browse page and this card's listing.</div>
 
             <!-- Description -->
             <h2 class="section-title">Description</h2>
@@ -709,78 +723,65 @@
         </form>
     </div>
 
+    <script src="config.js"></script>
+    <script src="cards-data.js"></script>
     <script>
-        let uploadedImages = [];
+        // Front/back card images, stored as data URLs and submitted directly
+        // to the backend as frontImageUrl/backImageUrl (see CardScope.io
+        // CLAUDE.md for the known scaling limitation of storing images this
+        // way - fine for now, not fine at real volume).
+        let cardImages = { front: null, back: null };
         let conditionType = 'graded';
 
-        // Image Upload Handling
-        function handleImageSelect(event) {
-            const files = Array.from(event.target.files);
-            
-            if (uploadedImages.length + files.length > 10) {
-                alert('Maximum 10 images allowed');
-                return;
-            }
+        function handleImageSelect(event, side) {
+            const file = event.target.files[0];
+            if (!file || !file.type.startsWith('image/')) return;
 
-            files.forEach(file => {
-                if (file.type.startsWith('image/')) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        uploadedImages.push({
-                            file: file,
-                            dataUrl: e.target.result,
-                            isPrimary: uploadedImages.length === 0
-                        });
-                        renderImagePreviews();
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                cardImages[side] = e.target.result;
+                renderImagePreview(side);
+            };
+            reader.readAsDataURL(file);
 
-            // Reset input
             event.target.value = '';
         }
 
-        function renderImagePreviews() {
-            const grid = document.getElementById('imagePreviewGrid');
-            grid.innerHTML = uploadedImages.map((img, index) => `
-                <div class="image-preview-item">
-                    <img src="${img.dataUrl}" alt="Card image ${index + 1}">
-                    <button type="button" class="image-remove-btn" onclick="removeImage(${index})" title="Remove image">×</button>
-                    ${img.isPrimary ? '<div class="primary-badge">Primary</div>' : ''}
-                </div>
-            `).join('');
-        }
-
-        function removeImage(index) {
-            uploadedImages.splice(index, 1);
-            
-            // If we removed the primary image, make the first remaining image primary
-            if (uploadedImages.length > 0) {
-                uploadedImages[0].isPrimary = true;
+        function renderImagePreview(side) {
+            const grid = document.getElementById(side + 'ImagePreview');
+            if (!cardImages[side]) {
+                grid.innerHTML = '';
+                return;
             }
-            
-            renderImagePreviews();
+            grid.innerHTML = `
+                <div class="image-preview-item">
+                    <img src="${cardImages[side]}" alt="Card ${side}">
+                    <button type="button" class="image-remove-btn" onclick="removeImage('${side}')" title="Remove image">×</button>
+                </div>
+            `;
         }
 
-        // Drag and Drop
-        const uploadZone = document.getElementById('uploadZone');
+        function removeImage(side) {
+            cardImages[side] = null;
+            renderImagePreview(side);
+        }
 
-        uploadZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadZone.classList.add('dragover');
-        });
-
-        uploadZone.addEventListener('dragleave', () => {
-            uploadZone.classList.remove('dragover');
-        });
-
-        uploadZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadZone.classList.remove('dragover');
-            
-            const files = Array.from(e.dataTransfer.files);
-            handleImageSelect({ target: { files }, preventDefault: () => {} });
+        // Drag and Drop for both zones
+        ['front', 'back'].forEach((side) => {
+            const zone = document.getElementById(side + 'UploadZone');
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('dragover');
+            });
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('dragover');
+            });
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('dragover');
+                const file = e.dataTransfer.files[0];
+                if (file) handleImageSelect({ target: { files: [file], value: '' } }, side);
+            });
         });
 
         // Condition Toggle
@@ -806,26 +807,31 @@
         }
 
         // Form Submission
-        function submitListing(event) {
+        async function submitListing(event) {
             event.preventDefault();
 
-            if (uploadedImages.length === 0) {
-                alert('Please upload at least one image of your card');
+            if (!cardImages.front || !cardImages.back) {
+                alert('Please upload both a front and back image of your card');
                 return;
             }
 
-            // Create card object
+            // Create card object matching the backend's expected shape.
+            // Images are sent as data URLs and stored directly in the
+            // database as text - fine for getting inventory listed now, but
+            // won't scale to real volume (large payloads per card). Worth
+            // moving to real file/object storage before listing hundreds of
+            // cards - see CardScope.io CLAUDE.md.
             const newCard = {
                 player: document.getElementById('playerName').value,
                 year: document.getElementById('year').value,
                 brand: document.getElementById('brand').value,
                 type: document.getElementById('cardType').value,
                 era: document.getElementById('era').value,
-                price: '$' + document.getElementById('price').value,
+                price: parseFloat(document.getElementById('price').value),
                 description: document.getElementById('description').value,
                 emoji: "⚾",
-                isUserSubmitted: true,
-                dateAdded: new Date().toISOString()
+                frontImageUrl: cardImages.front,
+                backImageUrl: cardImages.back,
             };
 
             // Add condition based on graded/ungraded
@@ -837,24 +843,22 @@
                 newCard.condition = document.getElementById('ungradedCondition').value;
             }
 
-            // Get existing user cards from localStorage
-            let userCards = [];
-            const stored = localStorage.getItem('userCards');
-            if (stored) {
-                userCards = JSON.parse(stored);
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+
+            try {
+                await submitCard(newCard);
+            } catch (err) {
+                console.error(err);
+                alert('Could not submit your listing — is the CardScope backend running? Your listing was not saved.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Listing for Review';
+                return;
             }
 
-            // Add new card to beginning of array (so it shows first)
-            userCards.unshift(newCard);
-
-            // Save back to localStorage
-            localStorage.setItem('userCards', JSON.stringify(userCards));
-
-            console.log('Card saved to localStorage:', newCard);
-            console.log('Total user cards:', userCards.length);
-
             // Show success message
-            alert('✓ Card listing created successfully! Your card is now live on CardScope.io');
+            alert('✓ Card listing created successfully! Your card is now live on CardScope.io for everyone to see.');
 
             // Redirect to homepage to see the new card
             window.location.href = 'index.html';

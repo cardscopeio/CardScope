@@ -6,6 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>CardScope - Premium Sports Cards Marketplace</title>
+    <link rel="stylesheet" href="card-flip.css">
     <style>
         * {
             margin: 0;
@@ -400,11 +401,13 @@
 
     <div class="cards-container" id="cardsContainer"></div>
 
+    <script src="config.js"></script>
     <script src="cards-data.js"></script>
     <script>
-        // Card data comes from cards-data.js (shared with card.html) so the
-        // demo catalog and user-submitted listings only need to be defined once.
-        let cardsData = getAllCards();
+        // Card data now comes from the backend API (see cards-data.js) so
+        // every visitor sees the same live listings, not just their own
+        // browser's localStorage.
+        let cardsData = [];
 
         let currentFilter = 'all';
         let searchTerm = '';
@@ -445,10 +448,10 @@
                 header.innerHTML = `Showing ${filteredCards.length} cards`;
             }
 
-            container.innerHTML = filteredCards.map((card, index) => `
-                <div class="card" onclick="viewCard(${cardsData.indexOf(card)})">
+            container.innerHTML = filteredCards.map((card) => `
+                <div class="card" onclick="viewCard('${card.id}')">
                     <div class="card-image">
-                        ${card.emoji}
+                        ${cardImageMarkup(card, '3rem')}
                         ${card.isUserSubmitted ? '<span class="new-badge">NEW</span>' : ''}
                     </div>
                     <div class="card-content">
@@ -460,12 +463,11 @@
                     </div>
                 </div>
             `).join('');
+            initCardFlipTouchSupport(container);
         }
 
-        function viewCard(index) {
-            const card = cardsData[index];
-            const cardId = cardSlug(card);
-            window.location.href = `card.html?card=${cardId}`;
+        function viewCard(id) {
+            window.location.href = `card.html?card=${id}`;
         }
 
         document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -482,7 +484,21 @@
             renderCards();
         });
 
-        renderCards();
+        async function init() {
+            const header = document.getElementById('cardsHeader');
+            header.innerHTML = 'Loading cards…';
+            try {
+                cardsData = await fetchAllCards();
+            } catch (err) {
+                console.error(err);
+                header.innerHTML = 'Could not load cards — is the CardScope backend running?';
+                cardsData = [];
+                return;
+            }
+            renderCards();
+        }
+
+        init();
     </script>
 </body>
 </html>

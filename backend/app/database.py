@@ -43,10 +43,21 @@ def init_db():
             serial_number TEXT,
             status TEXT DEFAULT 'listed',
             is_user_submitted INTEGER DEFAULT 0,
-            date_added TEXT DEFAULT (datetime('now'))
+            date_added TEXT DEFAULT (datetime('now')),
+            front_image_url TEXT,
+            back_image_url TEXT
         )
         """
     )
+    conn.commit()
+
+    # Migrate existing databases created before front/back image support was
+    # added, so a re-deploy doesn't wipe/break on the new columns.
+    existing_cols = {row["name"] for row in conn.execute("PRAGMA table_info(cards)").fetchall()}
+    if "front_image_url" not in existing_cols:
+        conn.execute("ALTER TABLE cards ADD COLUMN front_image_url TEXT")
+    if "back_image_url" not in existing_cols:
+        conn.execute("ALTER TABLE cards ADD COLUMN back_image_url TEXT")
     conn.commit()
 
     # Seed with the original 16 demo cards on first run only, so re-deploys

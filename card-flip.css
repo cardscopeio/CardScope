@@ -1,0 +1,53 @@
+/*
+ * Card front/back hover-swap effect.
+ * Matches the reference behavior from odizcg.com/card-shop/ - a WooCommerce
+ * site using its built-in "swap to second image on hover" feature. That's a
+ * plain crossfade between two stacked images, not a 3D flip animation, so
+ * that's what this reproduces: simplest thing that gives the same result,
+ * and it degrades gracefully (no JS required, no back image = no effect).
+ *
+ * Markup shape expected:
+ *   <div class="card-flip-image">
+ *     <img class="card-flip-front" src="...">
+ *     <img class="card-flip-back" src="...">   (optional - omit if no back image)
+ *   </div>
+ */
+
+.card-flip-image {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.card-flip-image .card-flip-front,
+.card-flip-image .card-flip-back {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 0.3s ease;
+}
+
+.card-flip-image .card-flip-back {
+    opacity: 0;
+}
+
+.card-flip-image:hover .card-flip-front {
+    opacity: 0;
+}
+
+.card-flip-image:hover .card-flip-back {
+    opacity: 1;
+}
+
+/* Touch devices can't hover - tap toggles instead, via the .flipped class
+   (see the small init script in each page that uses this component). */
+.card-flip-image.flipped .card-flip-front {
+    opacity: 0;
+}
+
+.card-flip-image.flipped .card-flip-back {
+    opacity: 1;
+}

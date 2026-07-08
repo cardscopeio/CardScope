@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title id="pageTitle">Card Profile - CardScope.io</title>
+    <link rel="stylesheet" href="card-flip.css">
     <style>
         * {
             margin: 0;
@@ -450,38 +451,48 @@
         </div>
     </div>
 
+    <script src="config.js"></script>
     <script src="cards-data.js"></script>
     <script>
-        // Card data comes from cards-data.js (shared with index.html), and
-        // includes user-submitted listings from localStorage so any card
-        // added via sell-cards.html can be viewed here too.
-        const cardsData = getAllCards();
+        // Card data comes from the backend API (see cards-data.js), which
+        // includes user-submitted listings - any card added via
+        // sell-cards.html can now be viewed here by anyone, not just the
+        // browser that submitted it.
 
         function getCardFromUrl() {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get('card');
         }
 
-        function getCardById(id) {
-            return cardsData.find(card => cardSlug(card) === id);
-        }
-
-        function loadCard() {
+        async function loadCard() {
             const cardId = getCardFromUrl();
-            let card;
-            
-            if (cardId) {
-                card = getCardById(cardId);
+            let card = null;
+
+            try {
+                if (cardId) {
+                    card = await fetchCardById(cardId);
+                }
+                if (!card) {
+                    const all = await fetchAllCards();
+                    card = all[0] || null;
+                }
+            } catch (err) {
+                console.error(err);
+                document.getElementById('playerName').textContent = 'Could not load card';
+                document.getElementById('description').textContent = 'Is the CardScope backend running?';
+                return;
             }
-            
+
             if (!card) {
-                card = cardsData[0];
+                document.getElementById('playerName').textContent = 'Card not found';
+                return;
             }
 
             document.getElementById('pageTitle').textContent = `${card.player} ${card.year} - CardScope.io`;
             document.getElementById('playerName').textContent = card.player;
             document.getElementById('yearBadge').textContent = card.year;
-            document.getElementById('cardImage').textContent = card.emoji;
+            document.getElementById('cardImage').innerHTML = cardImageMarkup(card, '8rem');
+            initCardFlipTouchSupport(document.getElementById('cardImage'));
             document.getElementById('description').textContent = card.description || 'No description provided.';
             document.getElementById('brandValue').textContent = card.brand;
             document.getElementById('typeValue').textContent = card.type;
