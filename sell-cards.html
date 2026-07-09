@@ -526,8 +526,8 @@
 
     <div class="container">
         <div class="page-header">
-            <h1 class="page-title">List Your Card for Sale</h1>
-            <p class="page-subtitle">Fill out the details below to list your baseball card on CardScope.io. Our team will review your listing within 24 hours.</p>
+            <h1 class="page-title" id="pageTitle">List Your Card for Sale</h1>
+            <p class="page-subtitle" id="pageSubtitle">Fill out the details below to list your baseball card on CardScope.io. Our team will review your listing within 24 hours.</p>
         </div>
 
         <form class="sell-form" id="sellForm" onsubmit="submitListing(event)">
@@ -717,7 +717,7 @@
                 </label>
 
                 <div class="submit-buttons">
-                    <button type="button" class="btn-draft" onclick="saveDraft()">Save as Draft</button>
+                    <button type="button" class="btn-draft" onclick="saveDraft()" id="draftBtn">Save as Draft</button>
                     <button type="submit" class="btn-submit" id="submitBtn">Submit Listing for Review</button>
                 </div>
             </div>
@@ -735,12 +735,88 @@
             window.location.href = 'login.html?next=sell-cards.html';
         }
 
+        // Edit mode: sell-cards.html?edit=<slug> pre-fills this same form
+        // instead of duplicating it into a separate page. Only the card's
+        // owner can edit it - enforced here (redirect) AND on the backend
+        // (403), since a client-side check alone isn't real security.
+        const EDIT_SLUG = new URLSearchParams(window.location.search).get('edit');
+        const GRADING_COMPANIES = ['PSA', 'BGS', 'SGC', 'CGC', 'HGA'];
+
         // Front/back card images, stored as data URLs and submitted directly
         // to the backend as frontImageUrl/backImageUrl (see CardScope.io
         // CLAUDE.md for the known scaling limitation of storing images this
         // way - fine for now, not fine at real volume).
         let cardImages = { front: null, back: null };
         let conditionType = 'graded';
+
+        async function loadCardForEdit() {
+            let card;
+            try {
+                card = await fetchCardById(EDIT_SLUG);
+            } catch (err) {
+                console.error(err);
+                alert('Could not load this card for editing — is the CardScope backend running?');
+                window.location.href = 'manage-cards.html';
+                return;
+            }
+            if (!card) {
+                alert('That card could not be found.');
+                window.location.href = 'manage-cards.html';
+                return;
+            }
+            if (card.userId !== getAuthUserId()) {
+                alert('You can only edit cards you listed.');
+                window.location.href = 'manage-cards.html';
+                return;
+            }
+
+            document.getElementById('pageTitle').textContent = 'Edit Your Card';
+            document.getElementById('pageSubtitle').textContent = 'Update the details below and save your changes.';
+            document.getElementById('submitBtn').textContent = 'Save Changes';
+            document.getElementById('draftBtn').style.display = 'none';
+
+            document.getElementById('playerName').value = card.player;
+            document.getElementById('year').value = card.year;
+            document.getElementById('brand').value = card.brand;
+            document.getElementById('cardType').value = card.type;
+            document.getElementById('era').value = card.era;
+            document.getElementById('description').value = card.description || '';
+            // card.price is formatted like "$2,750" - strip to a plain number
+            document.getElementById('price').value = (card.price || '').replace(/[^0-9.]/g, '');
+
+            // Best-effort split of the stored "condition" string (e.g. "PSA 9")
+            // back into grading company + grade, or treat as ungraded if it
+            // doesn't start with a known grading company.
+            const condition = card.condition || '';
+            const matchedCompany = GRADING_COMPANIES.find(c => condition.startsWith(c + ' '));
+            if (matchedCompany) {
+                toggleConditionType('graded');
+                document.getElementById('gradingCompany').value = matchedCompany;
+                document.getElementById('grade').value = condition.slice(matchedCompany.length + 1);
+            } else if (condition) {
+                toggleConditionType('ungraded');
+                document.getElementById('ungradedCondition').value = condition;
+            }
+
+            if (card.frontImageUrl) {
+                cardImages.front = card.frontImageUrl;
+                renderImagePreview('front');
+            }
+            if (card.backImageUrl) {
+                cardImages.back = card.backImageUrl;
+                renderImagePreview('back');
+            }
+
+            // Editing an existing listing doesn't need the "I certify I own
+            // this card" terms re-confirmed every time.
+            const termsRow = document.getElementById('termsAgree').closest('.terms-checkbox');
+            document.getElementById('termsAgree').required = false;
+            if (termsRow) termsRow.style.display = 'none';
+        }
+
+        if (EDIT_SLUG) {
+            loadCardForEdit();
+        }
 
         function handleImageSelect(event, side) {
             const file = event.target.files[0];
@@ -854,10 +930,14 @@
 
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Submitting...';
+            submitBtn.textContent = EDIT_SLUG ? 'Saving...' : 'Submitting...';
 
             try {
-                await submitCard(newCard);
+                if (EDIT_SLUG) {
+                    await updateCard(EDIT_SLUG, newCard);
+                } else {
+                    await submitCard(newCard);
+                }
             } catch (err) {
                 console.error(err);
                 if (err instanceof AuthRequiredError) {
@@ -866,17 +946,20 @@
                     window.location.href = 'login.html?next=sell-cards.html';
                     return;
                 }
-                alert('Could not submit your listing — is the CardScope backend running? Your listing was not saved.');
+                const action = EDIT_SLUG ? 'save your changes' : 'submit your listing';
+                alert(`Could not ${action} — is the CardScope backend running?`);
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Submit Listing for Review';
+                submitBtn.textContent = EDIT_SLUG ? 'Save Changes' : 'Submit Listing for Review';
                 return;
             }
 
-            // Show success message
-            alert('✓ Card listing created successfully! Your card is now live on CardScope.io for everyone to see.');
-
-            // Redirect to homepage to see the new card
-            window.location.href = 'index.html';
+            if (EDIT_SLUG) {
+                alert('✓ Your changes have been saved.');
+                window.location.href = 'manage-cards.html';
+            } else {
+                alert('✓ Card listing created successfully! Your card is now live on CardScope.io for everyone to see.');
+                window.location.href = 'index.html';
+            }
         }
 
         function saveDraft() {

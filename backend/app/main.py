@@ -20,7 +20,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 
-from .database import get_connection, init_db, slugify, create_user, get_user_by_email, get_user_by_id
+from .database import (
+    get_connection, init_db, slugify, create_user, get_user_by_email, get_user_by_id,
+    create_offer, get_offers_received, get_offers_sent, get_offer_by_id, update_offer_status,
+)
 from .auth import hash_password, verify_password, create_access_token, decode_access_token
 
 EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -236,6 +239,42 @@ def create_card(card: CardIn, current_user=Depends(get_current_user)):
     return row_to_card(row)
 
 
+@app.put("/api/cards/{slug}")
+def update_card(slug: str, card: CardIn, current_user=Depends(get_current_user)):
+    conn = get_connection()
+    row = conn.execute("SELECT slug, user_id FROM cards WHERE slug = ?", (slug,)).fetchone()
+    if row is None:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Card not found")
+    if row["user_id"] != current_user["id"]:
+        conn.close()
+        raise HTTPException(status_code=403, detail="You can only edit cards you listed")
+
+    # Slug (the primary key / URL) never changes on edit, even if the player
+    # name is corrected - keeps the listing's URL stable.
+    conn.execute(
+        """
+        UPDATE cards SET
+            player = ?, year = ?, brand = ?, type = ?, era = ?, condition = ?,
+            price_cents = ?, emoji = ?, description = ?, manufacturer = ?,
+            autographed = ?, numbered = ?, serial_number = ?,
+            front_image_url = ?, back_image_url = ?
+        WHERE slug = ?
+        """,
+        (
+            card.player, card.year, card.brand, card.type, card.era,
+            card.condition, int(round(card.price * 100)), card.emoji,
+            card.description, card.manufacturer, int(card.autographed),
+            int(card.numbered), card.serialNumber,
+            card.frontImageUrl, card.backImageUrl, slug,
+        ),
+    )
+    conn.commit()
+    row = conn.execute("SELECT * FROM cards WHERE slug = ?", (slug,)).fetchone()
+    conn.close()
+    return row_to_card(row)
+
+
 @app.delete("/api/cards/{slug}", status_code=204)
 def delete_card(slug: str, current_user=Depends(get_current_user)):
     conn = get_connection()
@@ -250,6 +289,77 @@ def delete_card(slug: str, current_user=Depends(get_current_user)):
     conn.commit()
     conn.close()
     return None
+
+
+# --- Offers ("Make an Offer" / "Contact Seller" - one combined flow) ---
+
+class OfferIn(BaseModel):
+    amount: Optional[float] = Field(None, description="Offer amount in dollars - optional, omit for a plain inquiry")
+    message: str
+
+
+class OfferStatusIn(BaseModel):
+    status: str  # "accepted" or "declined"
+
+    @field_validator("status")
+    @classmethod
+    def status_is_valid(cls, v):
+        if v not in ("accepted", "declined"):
+            raise ValueError('status must be "accepted" or "declined"')
+        return v
+
+
+def row_to_offer(row) -> dict:
+    dollars = row["amount_cents"] / 100 if row["amount_cents"] is not None else None
+    return {
+        "id": row["id"],
+        "cardSlug": row["card_slug"],
+        "buyerUserId": row["buyer_user_id"],
+        "sellerUserId": row["seller_user_id"],
+        "amount": f"${dollars:,.0f}" if dollars is not None and dollars == int(dollars)
+                  else (f"${dollars:,.2f}" if dollars is not None else None),
+        "message": row["message"],
+        "status": row["status"],
+        "createdAt": row["created_at"],
+    }
+
+
+@app.post("/api/cards/{slug}/offers", status_code=201)
+def make_offer(slug: str, offer: OfferIn, current_user=Depends(get_current_user)):
+    conn = get_connection()
+    card = conn.execute("SELECT slug, user_id FROM cards WHERE slug = ?", (slug,)).fetchone()
+    conn.close()
+    if card is None:
+        raise HTTPException(status_code=404, detail="Card not found")
+    if card["user_id"] == current_user["id"]:
+        raise HTTPException(status_code=400, detail="You can't make an offer on your own listing")
+
+    amount_cents = int(round(offer.amount * 100)) if offer.amount is not None else None
+    row = create_offer(slug, current_user["id"], card["user_id"], amount_cents, offer.message)
+    return row_to_offer(row)
+
+
+@app.get("/api/my-offers/received")
+def list_offers_received(current_user=Depends(get_current_user)):
+    rows = get_offers_received(current_user["id"])
+    return [row_to_offer(r) for r in rows]
+
+
+@app.get("/api/my-offers/sent")
+def list_offers_sent(current_user=Depends(get_current_user)):
+    rows = get_offers_sent(current_user["id"])
+    return [row_to_offer(r) for r in rows]
+
+
+@app.patch("/api/offers/{offer_id}")
+def respond_to_offer(offer_id: str, payload: OfferStatusIn, current_user=Depends(get_current_user)):
+    offer = get_offer_by_id(offer_id)
+    if offer is None:
+        raise HTTPException(status_code=404, detail="Offer not found")
+    if offer["seller_user_id"] != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Only the seller can respond to this offer")
+    row = update_offer_status(offer_id, payload.status)
+    return row_to_offer(row)
 
 
 @app.get("/api/health")

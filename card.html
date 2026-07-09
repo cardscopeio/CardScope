@@ -312,6 +312,74 @@
             transform: translateY(-2px);
         }
 
+        .offer-form-container {
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-radius: 12px;
+        }
+
+        .offer-form-container .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .offer-form-container label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #e1e8ed;
+        }
+
+        .offer-form-container input,
+        .offer-form-container textarea {
+            width: 100%;
+            padding: 0.85rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #e1e8ed;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        .offer-form-container input:focus,
+        .offer-form-container textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .offer-form-container textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .offer-form-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .offer-form-buttons button {
+            flex: 1;
+        }
+
+        .own-listing-notice {
+            margin-top: 1.5rem;
+            padding: 1rem 1.5rem;
+            background: rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 12px;
+            color: #c9d1d9;
+            font-size: 0.95rem;
+        }
+
+        .own-listing-notice a {
+            color: #667eea;
+            font-weight: 600;
+        }
+
         .condition-badge {
             display: inline-flex;
             align-items: center;
@@ -424,9 +492,29 @@
                     <div class="price-value" id="priceValue">-</div>
                 </div>
 
-                <div class="cta-buttons">
-                    <button class="btn-primary">Make an Offer</button>
-                    <button class="btn-secondary">Contact Seller</button>
+                <div class="cta-buttons" id="ctaButtons">
+                    <button class="btn-primary" id="makeOfferBtn" onclick="toggleOfferForm()">Make an Offer / Contact Seller</button>
+                </div>
+
+                <div class="offer-form-container" id="offerFormContainer" style="display: none;">
+                    <form id="offerForm" onsubmit="submitOffer(event)">
+                        <div class="form-group">
+                            <label>Offer Amount (optional)</label>
+                            <input type="number" id="offerAmount" placeholder="e.g. 2500" min="1" step="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Message</label>
+                            <textarea id="offerMessage" placeholder="Ask a question, or make your case for an offer..." required></textarea>
+                        </div>
+                        <div class="offer-form-buttons">
+                            <button type="button" class="btn-secondary" onclick="toggleOfferForm()">Cancel</button>
+                            <button type="submit" class="btn-primary" id="offerSubmitBtn">Send</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="own-listing-notice" id="ownListingNotice" style="display: none;">
+                    This is your listing. <a href="#" id="editListingLink">Edit it</a> from here.
                 </div>
             </div>
         </div>
@@ -460,6 +548,8 @@
         // sell-cards.html can now be viewed here by anyone, not just the
         // browser that submitted it.
 
+        let currentCard = null;
+
         function getCardFromUrl() {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get('card');
@@ -487,6 +577,17 @@
             if (!card) {
                 document.getElementById('playerName').textContent = 'Card not found';
                 return;
+            }
+
+            currentCard = card;
+
+            // Owner viewing their own listing gets an edit link instead of
+            // an offer form - you can't make an offer on your own card
+            // (the backend rejects this too, see /api/cards/{slug}/offers).
+            if (isLoggedIn() && card.userId === getAuthUserId()) {
+                document.getElementById('ctaButtons').style.display = 'none';
+                document.getElementById('ownListingNotice').style.display = 'block';
+                document.getElementById('editListingLink').href = `sell-cards.html?edit=${card.id}`;
             }
 
             document.getElementById('pageTitle').textContent = `${card.player} ${card.year} - CardScope.io`;
@@ -526,6 +627,54 @@
                 document.getElementById('rarityValue').textContent = 'Variable Population';
                 document.getElementById('investmentValue').textContent = 'Entry Level Investment';
             }
+        }
+
+        function toggleOfferForm() {
+            if (!isLoggedIn()) {
+                const here = `card.html?card=${getCardFromUrl() || ''}`;
+                window.location.href = `login.html?next=${encodeURIComponent(here)}`;
+                return;
+            }
+            const container = document.getElementById('offerFormContainer');
+            const isHidden = container.style.display === 'none';
+            container.style.display = isHidden ? 'block' : 'none';
+            document.getElementById('makeOfferBtn').style.display = isHidden ? 'none' : 'block';
+        }
+
+        async function submitOffer(event) {
+            event.preventDefault();
+            if (!currentCard) return;
+
+            const amountRaw = document.getElementById('offerAmount').value;
+            const message = document.getElementById('offerMessage').value;
+            const submitBtn = document.getElementById('offerSubmitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending...';
+
+            try {
+                await makeOffer(currentCard.id, {
+                    amount: amountRaw ? parseFloat(amountRaw) : null,
+                    message,
+                });
+            } catch (err) {
+                console.error(err);
+                if (err instanceof AuthRequiredError) {
+                    alert('Your session expired — please sign in again.');
+                    logout();
+                    window.location.href = `login.html?next=${encodeURIComponent('card.html?card=' + (getCardFromUrl() || ''))}`;
+                    return;
+                }
+                alert(err.message || 'Could not send your message. Please try again.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send';
+                return;
+            }
+
+            alert('✓ Sent! The seller will see your message in their offers inbox.');
+            toggleOfferForm();
+            document.getElementById('offerForm').reset();
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Send';
         }
 
         window.addEventListener('DOMContentLoaded', loadCard);

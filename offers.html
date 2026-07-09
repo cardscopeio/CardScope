@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>My Offers - CardScope.io</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0f1419 0%, #1a2332 100%);
+            color: #e1e8ed;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #8899a6;
+            margin-bottom: 2rem;
+        }
+
+        .back-link {
+            display: inline-block;
+            color: #667eea;
+            text-decoration: none;
+            margin-bottom: 2rem;
+            padding: 0.75rem 1.25rem;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .back-link:hover {
+            background: rgba(102, 126, 234, 0.2);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 0.9rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #8899a6;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: transparent;
+            color: white;
+        }
+
+        .offers-list {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .offer-item {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .offer-item:last-child {
+            border-bottom: none;
+        }
+
+        .offer-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .offer-card-link {
+            color: #667eea;
+            font-weight: 700;
+            font-size: 1.1rem;
+            text-decoration: none;
+        }
+
+        .offer-card-link:hover {
+            text-decoration: underline;
+        }
+
+        .offer-amount {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #667eea;
+            white-space: nowrap;
+        }
+
+        .offer-message {
+            color: #c9d1d9;
+            line-height: 1.5;
+            margin-bottom: 0.75rem;
+        }
+
+        .offer-meta-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .offer-date {
+            color: #8899a6;
+            font-size: 0.85rem;
+        }
+
+        .offer-status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .offer-status.pending {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+
+        .offer-status.accepted {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .offer-status.declined {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .offer-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-accept, .btn-decline {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+        }
+
+        .btn-accept {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: rgba(34, 197, 94, 0.4);
+            color: #22c55e;
+        }
+
+        .btn-accept:hover {
+            background: rgba(34, 197, 94, 0.3);
+        }
+
+        .btn-decline {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.4);
+            color: #ef4444;
+        }
+
+        .btn-decline:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #8899a6;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .offer-top-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">← Back to Homepage</a>
+
+        <h1>My Offers</h1>
+        <p class="subtitle">Offers and messages on your listings, plus offers you've sent</p>
+
+        <div class="tabs">
+            <div class="tab active" id="receivedTab" onclick="switchTab('received')">Received</div>
+            <div class="tab" id="sentTab" onclick="switchTab('sent')">Sent</div>
+        </div>
+
+        <div class="offers-list" id="offersList">
+            <div class="empty-state">
+                <div class="empty-state-icon">📭</div>
+                <p>Loading...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="cards-data.js"></script>
+    <script>
+        if (!isLoggedIn()) {
+            window.location.href = 'login.html?next=offers.html';
+        }
+
+        let currentTab = 'received';
+        let receivedOffers = [];
+        let sentOffers = [];
+
+        function formatDate(isoString) {
+            try {
+                const d = new Date(isoString.replace(' ', 'T') + 'Z');
+                return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+            } catch {
+                return isoString;
+            }
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('receivedTab').classList.toggle('active', tab === 'received');
+            document.getElementById('sentTab').classList.toggle('active', tab === 'sent');
+            render();
+        }
+
+        function render() {
+            const list = document.getElementById('offersList');
+            const offers = currentTab === 'received' ? receivedOffers : sentOffers;
+
+            if (offers.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <p>${currentTab === 'received' ? 'No offers on your listings yet' : "You haven't sent any offers yet"}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = offers.map((offer) => `
+                <div class="offer-item">
+                    <div class="offer-top-row">
+                        <a href="card.html?card=${offer.cardSlug}" class="offer-card-link">${offer.cardSlug.replace(/-/g, ' ')}</a>
+                        ${offer.amount ? `<div class="offer-amount">${offer.amount}</div>` : ''}
+                    </div>
+                    <div class="offer-message">${offer.message}</div>
+                    <div class="offer-meta-row">
+                        <div>
+                            <span class="offer-status ${offer.status}">${offer.status}</span>
+                            <span class="offer-date">${formatDate(offer.createdAt)}</span>
+                        </div>
+                        ${currentTab === 'received' && offer.status === 'pending' ? `
+                            <div class="offer-actions">
+                                <button class="btn-accept" onclick="respond('${offer.id}', 'accepted')">Accept</button>
+                                <button class="btn-decline" onclick="respond('${offer.id}', 'declined')">Decline</button>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function respond(offerId, status) {
+            try {
+                await respondToOffer(offerId, status);
+            } catch (err) {
+                console.error(err);
+                if (err instanceof AuthRequiredError) {
+                    logout();
+                    window.location.href = 'login.html?next=offers.html';
+                    return;
+                }
+                alert('Could not update this offer — is the CardScope backend running?');
+                return;
+            }
+            loadOffers();
+        }
+
+        async function loadOffers() {
+            try {
+                [receivedOffers, sentOffers] = await Promise.all([
+                    fetchOffersReceived(),
+                    fetchOffersSent(),
+                ]);
+            } catch (err) {
+                console.error(err);
+                if (err instanceof AuthRequiredError) {
+                    logout();
+                    window.location.href = 'login.html?next=offers.html';
+                    return;
+                }
+                document.getElementById('offersList').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <p>Could not load offers — is the CardScope backend running?</p>
+                    </div>
+                `;
+                return;
+            }
+            render();
+        }
+
+        loadOffers();
+    </script>
+</body>
+</html>

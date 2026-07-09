@@ -60,6 +60,20 @@ def init_db():
         )
         """
     )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS offers (
+            id TEXT PRIMARY KEY,
+            card_slug TEXT NOT NULL,
+            buyer_user_id TEXT NOT NULL,
+            seller_user_id TEXT,
+            amount_cents INTEGER,
+            message TEXT NOT NULL,
+            status TEXT DEFAULT 'pending',
+            created_at TEXT DEFAULT (datetime('now'))
+        )
+        """
+    )
     conn.commit()
 
     # Migrate existing databases created before front/back image support was
@@ -109,6 +123,62 @@ def get_user_by_email(email):
 def get_user_by_id(user_id):
     conn = get_connection()
     row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    conn.close()
+    return row
+
+
+# --- Offer helpers ---
+# "Make an Offer" and "Contact Seller" are the same flow: message required,
+# amount_cents optional (a plain inquiry has no price attached).
+
+def create_offer(card_slug, buyer_user_id, seller_user_id, amount_cents, message):
+    conn = get_connection()
+    offer_id = str(uuid.uuid4())
+    conn.execute(
+        """
+        INSERT INTO offers (id, card_slug, buyer_user_id, seller_user_id, amount_cents, message)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (offer_id, card_slug, buyer_user_id, seller_user_id, amount_cents, message),
+    )
+    conn.commit()
+    row = conn.execute("SELECT * FROM offers WHERE id = ?", (offer_id,)).fetchone()
+    conn.close()
+    return row
+
+
+def get_offers_received(seller_user_id):
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT * FROM offers WHERE seller_user_id = ? ORDER BY created_at DESC",
+        (seller_user_id,),
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+def get_offers_sent(buyer_user_id):
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT * FROM offers WHERE buyer_user_id = ? ORDER BY created_at DESC",
+        (buyer_user_id,),
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+def get_offer_by_id(offer_id):
+    conn = get_connection()
+    row = conn.execute("SELECT * FROM offers WHERE id = ?", (offer_id,)).fetchone()
+    conn.close()
+    return row
+
+
+def update_offer_status(offer_id, status):
+    conn = get_connection()
+    conn.execute("UPDATE offers SET status = ? WHERE id = ?", (status, offer_id))
+    conn.commit()
+    row = conn.execute("SELECT * FROM offers WHERE id = ?", (offer_id,)).fetchone()
     conn.close()
     return row
 

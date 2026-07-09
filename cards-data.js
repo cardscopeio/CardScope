@@ -33,6 +33,17 @@ async function submitCard(cardData) {
     return res.json();
 }
 
+async function updateCard(id, cardData) {
+    const res = await fetch(`${API_BASE_URL}/api/cards/${encodeURIComponent(id)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...authHeader() },
+        body: JSON.stringify(cardData),
+    });
+    if (res.status === 401) throw new AuthRequiredError();
+    if (!res.ok) throw new Error(`Failed to update card (${res.status})`);
+    return res.json();
+}
+
 async function deleteCardById(id) {
     const res = await fetch(`${API_BASE_URL}/api/cards/${encodeURIComponent(id)}`, {
         method: "DELETE",
@@ -51,6 +62,49 @@ async function fetchMyCards() {
     return res.json();
 }
 
+// --- Offers ("Make an Offer" / "Contact Seller" - one combined flow) ---
+
+async function makeOffer(cardId, { amount, message }) {
+    const res = await fetch(`${API_BASE_URL}/api/cards/${encodeURIComponent(cardId)}/offers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader() },
+        body: JSON.stringify({ amount: amount ?? null, message }),
+    });
+    if (res.status === 401) throw new AuthRequiredError();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || `Failed to send offer (${res.status})`);
+    return data;
+}
+
+async function fetchOffersReceived() {
+    const res = await fetch(`${API_BASE_URL}/api/my-offers/received`, {
+        headers: { ...authHeader() },
+    });
+    if (res.status === 401) throw new AuthRequiredError();
+    if (!res.ok) throw new Error(`Failed to load offers (${res.status})`);
+    return res.json();
+}
+
+async function fetchOffersSent() {
+    const res = await fetch(`${API_BASE_URL}/api/my-offers/sent`, {
+        headers: { ...authHeader() },
+    });
+    if (res.status === 401) throw new AuthRequiredError();
+    if (!res.ok) throw new Error(`Failed to load offers (${res.status})`);
+    return res.json();
+}
+
+async function respondToOffer(offerId, status) {
+    const res = await fetch(`${API_BASE_URL}/api/offers/${encodeURIComponent(offerId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeader() },
+        body: JSON.stringify({ status }),
+    });
+    if (res.status === 401) throw new AuthRequiredError();
+    if (!res.ok) throw new Error(`Failed to respond to offer (${res.status})`);
+    return res.json();
+}
+
 // --- Auth ---
 // Sessions are a JWT stored in localStorage - simple and fine for a
 // marketplace at this stage. No refresh-token rotation, no password-reset
@@ -58,6 +112,7 @@ async function fetchMyCards() {
 
 const AUTH_TOKEN_KEY = "cardscope_auth_token";
 const AUTH_EMAIL_KEY = "cardscope_auth_email";
+const AUTH_USER_ID_KEY = "cardscope_auth_user_id";
 
 class AuthRequiredError extends Error {
     constructor() {
@@ -79,18 +134,24 @@ function getAuthEmail() {
     return localStorage.getItem(AUTH_EMAIL_KEY);
 }
 
+function getAuthUserId() {
+    return localStorage.getItem(AUTH_USER_ID_KEY);
+}
+
 function isLoggedIn() {
     return !!getAuthToken();
 }
 
-function saveSession(accessToken, email) {
+function saveSession(accessToken, email, userId) {
     localStorage.setItem(AUTH_TOKEN_KEY, accessToken);
     localStorage.setItem(AUTH_EMAIL_KEY, email);
+    localStorage.setItem(AUTH_USER_ID_KEY, userId);
 }
 
 function logout() {
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(AUTH_EMAIL_KEY);
+    localStorage.removeItem(AUTH_USER_ID_KEY);
 }
 
 async function registerAccount(email, password) {
@@ -101,7 +162,7 @@ async function registerAccount(email, password) {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.detail || `Registration failed (${res.status})`);
-    saveSession(data.accessToken, data.email);
+    saveSession(data.accessToken, data.email, data.userId);
     return data;
 }
 
@@ -113,7 +174,7 @@ async function loginAccount(email, password) {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.detail || `Login failed (${res.status})`);
-    saveSession(data.accessToken, data.email);
+    saveSession(data.accessToken, data.email, data.userId);
     return data;
 }
 
@@ -125,6 +186,7 @@ function renderAuthNav() {
     if (isLoggedIn()) {
         slot.innerHTML = `
             <a href="manage-cards.html">My Cards</a>
+            <a href="offers.html">My Offers</a>
             <a href="#" onclick="logout(); window.location.href='index.html'; return false;">Log Out (${getAuthEmail()})</a>
         `;
     } else {

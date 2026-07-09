@@ -148,6 +148,23 @@
             margin: 0 2rem;
         }
 
+        .btn-edit {
+            padding: 0.5rem 1rem;
+            background: rgba(102, 126, 234, 0.2);
+            border: 1px solid rgba(102, 126, 234, 0.4);
+            border-radius: 6px;
+            color: #667eea;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            margin-right: 0.5rem;
+            display: inline-block;
+        }
+
+        .btn-edit:hover {
+            background: rgba(102, 126, 234, 0.3);
+        }
+
         .btn-delete {
             padding: 0.5rem 1rem;
             background: rgba(239, 68, 68, 0.2);
@@ -316,6 +333,7 @@
                         <div class="card-details">${card.year} ${card.brand} • ${card.type} • ${card.condition || 'Ungraded'}</div>
                     </div>
                     <div class="card-price">${card.price}</div>
+                    <a href="sell-cards.html?edit=${card.id}" class="btn-edit">Edit</a>
                     <button class="btn-delete" onclick="deleteCard('${card.id}')">Delete</button>
                 </div>
             `).join('');
