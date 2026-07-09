@@ -262,6 +262,7 @@
                 <a href="sell-cards.html">Sell Cards</a>
                 <a href="#about">About</a>
                 <a href="contact.html" class="active">Contact</a>
+                <span id="authNavSlot"></span>
             </nav>
         </div>
     </header>
@@ -307,7 +308,11 @@
         </form>
     </div>
 
+    <script src="config.js"></script>
+    <script src="cards-data.js"></script>
     <script>
+        renderAuthNav();
+
         function submitContactForm(event) {
             event.preventDefault();
 

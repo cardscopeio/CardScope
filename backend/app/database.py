@@ -7,6 +7,7 @@ and this keeps the dependency list (and thing-to-learn list) minimal.
 import sqlite3
 import os
 import re
+import uuid
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "..", "cardscope.db")
 
@@ -49,6 +50,16 @@ def init_db():
         )
         """
     )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS users (
+            id TEXT PRIMARY KEY,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            created_at TEXT DEFAULT (datetime('now'))
+        )
+        """
+    )
     conn.commit()
 
     # Migrate existing databases created before front/back image support was
@@ -58,6 +69,10 @@ def init_db():
         conn.execute("ALTER TABLE cards ADD COLUMN front_image_url TEXT")
     if "back_image_url" not in existing_cols:
         conn.execute("ALTER TABLE cards ADD COLUMN back_image_url TEXT")
+    if "user_id" not in existing_cols:
+        # Nullable - existing demo cards and any pre-accounts listings have
+        # no owner. Only newly-created cards get a real user_id going forward.
+        conn.execute("ALTER TABLE cards ADD COLUMN user_id TEXT")
     conn.commit()
 
     # Seed with the original 16 demo cards on first run only, so re-deploys
@@ -67,6 +82,35 @@ def init_db():
         seed_demo_cards(conn)
 
     conn.close()
+
+
+# --- User account helpers ---
+
+def create_user(email, password_hash):
+    conn = get_connection()
+    user_id = str(uuid.uuid4())
+    conn.execute(
+        "INSERT INTO users (id, email, password_hash) VALUES (?, ?, ?)",
+        (user_id, email.strip().lower(), password_hash),
+    )
+    conn.commit()
+    row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    conn.close()
+    return row
+
+
+def get_user_by_email(email):
+    conn = get_connection()
+    row = conn.execute("SELECT * FROM users WHERE email = ?", (email.strip().lower(),)).fetchone()
+    conn.close()
+    return row
+
+
+def get_user_by_id(user_id):
+    conn = get_connection()
+    row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    conn.close()
+    return row
 
 
 DEMO_CARDS = [

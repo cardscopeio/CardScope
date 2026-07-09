@@ -519,6 +519,7 @@
                 <a href="sell-cards.html" class="active">Sell Cards</a>
                 <a href="#about">About</a>
                 <a href="contact.html">Contact</a>
+                <span id="authNavSlot"></span>
             </nav>
         </div>
     </header>
@@ -726,6 +727,14 @@
     <script src="config.js"></script>
     <script src="cards-data.js"></script>
     <script>
+        renderAuthNav();
+
+        // Selling requires an account so listings can be tied to their
+        // owner and managed later. Bounce to sign-in, then back here.
+        if (!isLoggedIn()) {
+            window.location.href = 'login.html?next=sell-cards.html';
+        }
+
         // Front/back card images, stored as data URLs and submitted directly
         // to the backend as frontImageUrl/backImageUrl (see CardScope.io
         // CLAUDE.md for the known scaling limitation of storing images this
@@ -851,6 +860,12 @@
                 await submitCard(newCard);
             } catch (err) {
                 console.error(err);
+                if (err instanceof AuthRequiredError) {
+                    alert('Your session expired — please sign in again.');
+                    logout();
+                    window.location.href = 'login.html?next=sell-cards.html';
+                    return;
+                }
                 alert('Could not submit your listing — is the CardScope backend running? Your listing was not saved.');
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Submit Listing for Review';

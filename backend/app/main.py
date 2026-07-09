@@ -14,12 +14,16 @@ card object, so the frontend migration is a data-source swap, not a rewrite:
     { player, year, brand, type, era, condition, price, emoji, description,
       isUserSubmitted, dateAdded }
 """
-from fastapi import FastAPI, HTTPException
+import re
+from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 
-from .database import get_connection, init_db, slugify
+from .database import get_connection, init_db, slugify, create_user, get_user_by_email, get_user_by_id
+from .auth import hash_password, verify_password, create_access_token, decode_access_token
+
+EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 app = FastAPI(title="CardScope.io API")
 
@@ -44,6 +48,81 @@ def startup():
     init_db()
 
 
+# --- Auth models & dependency ---
+
+class UserRegister(BaseModel):
+    email: str
+    password: str
+
+    @field_validator("email")
+    @classmethod
+    def email_looks_valid(cls, v):
+        if not EMAIL_REGEX.match(v):
+            raise ValueError("Invalid email address")
+        return v.strip().lower()
+
+    @field_validator("password")
+    @classmethod
+    def password_long_enough(cls, v):
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters")
+        return v
+
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+
+class TokenOut(BaseModel):
+    accessToken: str
+    tokenType: str = "bearer"
+    userId: str
+    email: str
+
+
+def row_to_user_public(row) -> dict:
+    return {"id": row["id"], "email": row["email"], "createdAt": row["created_at"]}
+
+
+def get_current_user(authorization: Optional[str] = Header(None)):
+    """FastAPI dependency - requires a valid 'Authorization: Bearer <token>' header."""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    token = authorization.split(" ", 1)[1]
+    user_id = decode_access_token(token)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    user = get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=401, detail="User no longer exists")
+    return user
+
+
+@app.post("/api/auth/register", status_code=201, response_model=TokenOut)
+def register(payload: UserRegister):
+    if get_user_by_email(payload.email):
+        raise HTTPException(status_code=409, detail="An account with this email already exists")
+    password_hash = hash_password(payload.password)
+    user = create_user(payload.email, password_hash)
+    token = create_access_token(user["id"])
+    return {"accessToken": token, "userId": user["id"], "email": user["email"]}
+
+
+@app.post("/api/auth/login", response_model=TokenOut)
+def login(payload: UserLogin):
+    user = get_user_by_email(payload.email)
+    if not user or not verify_password(payload.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Incorrect email or password")
+    token = create_access_token(user["id"])
+    return {"accessToken": token, "userId": user["id"], "email": user["email"]}
+
+
+@app.get("/api/auth/me")
+def read_current_user(current_user=Depends(get_current_user)):
+    return row_to_user_public(current_user)
+
+
 def row_to_card(row) -> dict:
     dollars = row["price_cents"] / 100
     return {
@@ -66,6 +145,7 @@ def row_to_card(row) -> dict:
         "dateAdded": row["date_added"],
         "frontImageUrl": row["front_image_url"],
         "backImageUrl": row["back_image_url"],
+        "userId": row["user_id"],
     }
 
 
@@ -107,8 +187,19 @@ def get_card(slug: str):
     return row_to_card(row)
 
 
+@app.get("/api/my-cards")
+def list_my_cards(current_user=Depends(get_current_user)):
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT * FROM cards WHERE user_id = ? ORDER BY date_added DESC",
+        (current_user["id"],),
+    ).fetchall()
+    conn.close()
+    return [row_to_card(r) for r in rows]
+
+
 @app.post("/api/cards", status_code=201)
-def create_card(card: CardIn):
+def create_card(card: CardIn, current_user=Depends(get_current_user)):
     slug = slugify(card.player)
     conn = get_connection()
 
@@ -128,15 +219,15 @@ def create_card(card: CardIn):
         INSERT INTO cards
             (slug, player, year, brand, type, era, condition, price_cents,
              emoji, description, manufacturer, autographed, numbered,
-             serial_number, is_user_submitted, front_image_url, back_image_url)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+             serial_number, is_user_submitted, front_image_url, back_image_url, user_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
         """,
         (
             slug, card.player, card.year, card.brand, card.type, card.era,
             card.condition, int(round(card.price * 100)), card.emoji,
             card.description, card.manufacturer, int(card.autographed),
             int(card.numbered), card.serialNumber,
-            card.frontImageUrl, card.backImageUrl,
+            card.frontImageUrl, card.backImageUrl, current_user["id"],
         ),
     )
     conn.commit()
@@ -146,12 +237,15 @@ def create_card(card: CardIn):
 
 
 @app.delete("/api/cards/{slug}", status_code=204)
-def delete_card(slug: str):
+def delete_card(slug: str, current_user=Depends(get_current_user)):
     conn = get_connection()
-    row = conn.execute("SELECT slug FROM cards WHERE slug = ?", (slug,)).fetchone()
+    row = conn.execute("SELECT slug, user_id FROM cards WHERE slug = ?", (slug,)).fetchone()
     if row is None:
         conn.close()
         raise HTTPException(status_code=404, detail="Card not found")
+    if row["user_id"] != current_user["id"]:
+        conn.close()
+        raise HTTPException(status_code=403, detail="You can only delete cards you listed")
     conn.execute("DELETE FROM cards WHERE slug = ?", (slug,))
     conn.commit()
     conn.close()

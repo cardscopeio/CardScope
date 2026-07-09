@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Manage Cards - CardScope.io</title>
+    <title>My Cards - CardScope.io</title>
     <style>
         * {
             margin: 0;
@@ -241,29 +241,26 @@
 <body>
     <div class="container">
         <a href="index.html" class="back-link">← Back to Homepage</a>
-        
-        <h1>Manage User Listings</h1>
-        <p class="subtitle">View and manage all user-submitted card listings</p>
+        <span id="authNavSlot" style="float: right; margin-top: 0.5rem;"></span>
+
+        <h1>My Cards</h1>
+        <p class="subtitle">View and manage the cards you've listed</p>
 
         <div class="stats">
             <div class="stat-card">
                 <div class="stat-value" id="userCardCount">0</div>
-                <div class="stat-label">User Listings</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="totalCardCount">0</div>
-                <div class="stat-label">Total Cards</div>
+                <div class="stat-label">Your Listings</div>
             </div>
         </div>
 
         <div class="actions">
-            <button class="btn btn-danger" onclick="clearAllUserCards()">Clear All User Listings</button>
+            <button class="btn btn-danger" onclick="clearAllMyCards()">Delete All My Listings</button>
         </div>
 
         <div class="cards-list" id="cardsList">
             <div class="empty-state">
                 <div class="empty-state-icon">📦</div>
-                <p>No user-submitted cards yet</p>
+                <p>You haven't listed any cards yet</p>
             </div>
         </div>
     </div>
@@ -271,39 +268,48 @@
     <script src="config.js"></script>
     <script src="cards-data.js"></script>
     <script>
-        let allCards = [];
+        renderAuthNav();
+
+        // This page shows YOUR cards specifically - requires being signed in.
+        if (!isLoggedIn()) {
+            window.location.href = 'login.html?next=manage-cards.html';
+        }
+
+        let myCards = [];
 
         async function loadCards() {
             const cardsList = document.getElementById('cardsList');
             try {
-                allCards = await fetchAllCards();
+                myCards = await fetchMyCards();
             } catch (err) {
                 console.error(err);
+                if (err instanceof AuthRequiredError) {
+                    logout();
+                    window.location.href = 'login.html?next=manage-cards.html';
+                    return;
+                }
                 cardsList.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-state-icon">⚠️</div>
-                        <p>Could not load cards — is the CardScope backend running?</p>
+                        <p>Could not load your cards — is the CardScope backend running?</p>
                     </div>
                 `;
                 return;
             }
 
-            const userCards = allCards.filter(card => card.isUserSubmitted);
+            document.getElementById('userCardCount').textContent = myCards.length;
 
-            document.getElementById('userCardCount').textContent = userCards.length;
-            document.getElementById('totalCardCount').textContent = allCards.length;
-
-            if (userCards.length === 0) {
+            if (myCards.length === 0) {
                 cardsList.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-state-icon">📦</div>
-                        <p>No user-submitted cards yet</p>
+                        <p>You haven't listed any cards yet</p>
                     </div>
                 `;
                 return;
             }
 
-            cardsList.innerHTML = userCards.map((card) => `
+            cardsList.innerHTML = myCards.map((card) => `
                 <div class="card-item">
                     <div class="card-info">
                         <div class="card-player">${card.player}</div>
@@ -323,25 +329,29 @@
                 await deleteCardById(id);
             } catch (err) {
                 console.error(err);
+                if (err instanceof AuthRequiredError) {
+                    logout();
+                    window.location.href = 'login.html?next=manage-cards.html';
+                    return;
+                }
                 alert('Could not delete this card — is the CardScope backend running?');
                 return;
             }
             loadCards();
         }
 
-        async function clearAllUserCards() {
-            if (!confirm('Are you sure you want to delete ALL user-submitted cards? This cannot be undone.')) {
+        async function clearAllMyCards() {
+            if (!confirm('Are you sure you want to delete ALL of your listings? This cannot be undone.')) {
                 return;
             }
-            const userCards = allCards.filter(card => card.isUserSubmitted);
             try {
-                await Promise.all(userCards.map(card => deleteCardById(card.id)));
+                await Promise.all(myCards.map(card => deleteCardById(card.id)));
             } catch (err) {
                 console.error(err);
                 alert('Some cards may not have been deleted — is the CardScope backend running?');
             }
             loadCards();
-            alert('All user-submitted cards have been deleted.');
+            alert('All of your listings have been deleted.');
         }
 
         // Load cards on page load
