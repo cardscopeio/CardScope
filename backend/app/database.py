@@ -1,21 +1,83 @@
 """
-SQLite setup for CardScope.io's backend.
+Postgres (Neon) setup for CardScope.io's backend.
 
-Deliberately plain sqlite3 (stdlib) instead of an ORM - the schema is small
-and this keeps the dependency list (and thing-to-learn list) minimal.
+Was plain sqlite3 (stdlib) originally, but Render's free web services have an
+EPHEMERAL filesystem: any local file (including a SQLite .db file) is wiped
+every time the service redeploys, restarts, or spins down from inactivity
+(free services sleep after 15 min idle). That's not a rare edge case - it's
+normal operation - so every card, account, and offer was silently getting
+wiped on a schedule outside our control. Discovered 2026-07-09 when a real
+user-submitted card vanished after a routine deploy.
+
+Postgres via Neon (https://neon.tech) fixes this: a real external database
+that isn't tied to the backend's filesystem lifecycle. Neon's free tier
+never deletes data due to inactivity (unlike Render's own free Postgres,
+which auto-deletes after 30 days) - it just suspends compute after 5 minutes
+idle and auto-resumes on the next query, transparently.
+
+To keep the rest of the app (main.py) nearly untouched, get_connection()
+returns a thin compatibility wrapper that accepts the same sqlite3-style
+"?" placeholders and dict-like row access (row["column"]) the code was
+already written against - only this file needed to change syntax.
+
+Requires a DATABASE_URL environment variable (a Neon connection string,
+e.g. postgresql://user:pass@ep-xxxx.neon.tech/neondb?sslmode=require).
 """
-import sqlite3
 import os
 import re
 import uuid
+import psycopg2
+import psycopg2.extras
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "..", "cardscope.db")
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError(
+        "DATABASE_URL environment variable is not set. This must be a Neon "
+        "(or other Postgres) connection string - see database.py for why "
+        "SQLite-on-Render doesn't work. Set it as an env var on Render (and "
+        "locally, for testing) before starting the app."
+    )
+
+
+class _CompatCursor:
+    """Wraps a psycopg2 RealDictCursor so callers can keep using
+    .fetchone()/.fetchall() exactly like the old sqlite3 code did."""
+
+    def __init__(self, cur):
+        self._cur = cur
+
+    def fetchone(self):
+        return self._cur.fetchone()
+
+    def fetchall(self):
+        return self._cur.fetchall()
+
+
+class _CompatConnection:
+    """Wraps a psycopg2 connection so callers can keep writing
+    conn.execute("... WHERE x = ?", (val,)) like the old sqlite3 code did.
+    Translates "?" placeholders to psycopg2's "%s" - safe here because none
+    of this app's SQL strings contain a literal "?" outside of placeholders."""
+
+    def __init__(self, conn):
+        self._conn = conn
+
+    def execute(self, query, params=()):
+        pg_query = query.replace("?", "%s")
+        cur = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(pg_query, params)
+        return _CompatCursor(cur)
+
+    def commit(self):
+        self._conn.commit()
+
+    def close(self):
+        self._conn.close()
 
 
 def get_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    conn = psycopg2.connect(DATABASE_URL)
+    return _CompatConnection(conn)
 
 
 def slugify(player_name: str) -> str:
@@ -44,9 +106,10 @@ def init_db():
             serial_number TEXT,
             status TEXT DEFAULT 'listed',
             is_user_submitted INTEGER DEFAULT 0,
-            date_added TEXT DEFAULT (datetime('now')),
+            date_added TEXT DEFAULT (to_char(now() at time zone 'utc', 'YYYY-MM-DD HH24:MI:SS')),
             front_image_url TEXT,
-            back_image_url TEXT
+            back_image_url TEXT,
+            user_id TEXT
         )
         """
     )
@@ -56,7 +119,7 @@ def init_db():
             id TEXT PRIMARY KEY,
             email TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
-            created_at TEXT DEFAULT (datetime('now'))
+            created_at TEXT DEFAULT (to_char(now() at time zone 'utc', 'YYYY-MM-DD HH24:MI:SS'))
         )
         """
     )
@@ -70,29 +133,16 @@ def init_db():
             amount_cents INTEGER,
             message TEXT NOT NULL,
             status TEXT DEFAULT 'pending',
-            created_at TEXT DEFAULT (datetime('now'))
+            created_at TEXT DEFAULT (to_char(now() at time zone 'utc', 'YYYY-MM-DD HH24:MI:SS'))
         )
         """
     )
     conn.commit()
 
-    # Migrate existing databases created before front/back image support was
-    # added, so a re-deploy doesn't wipe/break on the new columns.
-    existing_cols = {row["name"] for row in conn.execute("PRAGMA table_info(cards)").fetchall()}
-    if "front_image_url" not in existing_cols:
-        conn.execute("ALTER TABLE cards ADD COLUMN front_image_url TEXT")
-    if "back_image_url" not in existing_cols:
-        conn.execute("ALTER TABLE cards ADD COLUMN back_image_url TEXT")
-    if "user_id" not in existing_cols:
-        # Nullable - existing demo cards and any pre-accounts listings have
-        # no owner. Only newly-created cards get a real user_id going forward.
-        conn.execute("ALTER TABLE cards ADD COLUMN user_id TEXT")
-    conn.commit()
-
     # Seed with the original 16 demo cards on first run only, so re-deploys
     # don't duplicate rows.
-    count = conn.execute("SELECT COUNT(*) FROM cards").fetchone()[0]
-    if count == 0:
+    count_row = conn.execute("SELECT COUNT(*) as count FROM cards").fetchone()
+    if count_row["count"] == 0:
         seed_demo_cards(conn)
 
     conn.close()
@@ -224,9 +274,10 @@ def seed_demo_cards(conn):
         slug = slugify(player)
         conn.execute(
             """
-            INSERT OR IGNORE INTO cards
+            INSERT INTO cards
                 (slug, player, year, brand, type, era, condition, price_cents, description, is_user_submitted)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+            ON CONFLICT (slug) DO NOTHING
             """,
             (slug, player, year, brand, ctype, era, condition, price_cents, description),
         )

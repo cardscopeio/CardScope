@@ -1,12 +1,15 @@
 """
 CardScope.io backend API.
 
-Replaces the old localStorage-only approach: card listings are now stored
-in a real SQLite database, visible to every visitor, not just the browser
-that submitted them.
+Card listings, accounts, and offers are stored in a real Postgres database
+(Neon), visible to every visitor - not just the browser that submitted them,
+and not wiped every time the backend redeploys (see database.py for why
+SQLite-on-Render's-free-tier didn't actually persist data).
 
-Run locally:
-    cd "10 Backend"
+Run locally (requires a DATABASE_URL env var pointing at a Postgres/Neon
+instance - see database.py):
+    cd backend
+    export DATABASE_URL="postgresql://..."
     python3 -m uvicorn app.main:app --reload --port 8000
 
 API shape matches what the frontend (cards-data.js) already expects from a
