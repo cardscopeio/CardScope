@@ -401,6 +401,20 @@
             animation: pulse 2s infinite;
         }
 
+        .lot-badge-detail {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%);
+            border: 2px solid rgba(245, 158, 11, 0.4);
+            border-radius: 8px;
+            color: #f59e0b;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-left: 0.75rem;
+        }
+
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
@@ -443,6 +457,7 @@
             </div>
             <nav>
                 <a href="index.html">Browse</a>
+                <a href="index.html?view=bargain">Bargain Box</a>
                 <a href="sell-cards.html">Sell Cards</a>
                 <a href="#about">About</a>
                 <a href="contact.html">Contact</a>
@@ -462,6 +477,7 @@
             <div class="card-info">
                 <h1 class="player-name" id="playerName">Loading...</h1>
                 <div class="card-year-badge" id="yearBadge">2011</div>
+                <span id="lotBadgeDetail"></span>
                 <div id="conditionBadge"></div>
 
                 <p class="description" id="description">
@@ -488,7 +504,7 @@
                 </div>
 
                 <div class="price-section">
-                    <div class="price-label">Current Market Price</div>
+                    <div class="price-label" id="priceLabel">Current Market Price</div>
                     <div class="price-value" id="priceValue">-</div>
                 </div>
 
@@ -521,6 +537,10 @@
 
         <div class="specs-section">
             <h2 class="section-title">Card Specifications</h2>
+            <div class="spec-row" id="lotCardCountRow" style="display: none;">
+                <span class="spec-key">Cards in Lot</span>
+                <span class="spec-value" id="lotCardCountValue">-</span>
+            </div>
             <div class="spec-row">
                 <span class="spec-key">Authentication</span>
                 <span class="spec-value" id="authValue">Professional Grading Service</span>
@@ -603,7 +623,18 @@
             document.getElementById('priceValue').textContent = card.price;
             document.getElementById('conditionValue').textContent = card.condition;
             document.getElementById('authValue').textContent = card.condition ? `Professional Grading Service (${card.condition.split(' ')[0]})` : 'Ungraded';
-            
+
+            if (card.isBargainBox) {
+                document.getElementById('priceLabel').textContent = 'Lot Price';
+                document.getElementById('lotBadgeDetail').innerHTML = `
+                    <span class="lot-badge-detail">📦 Bargain Box${card.lotCardCount ? ' — ' + card.lotCardCount + ' Cards' : ''}</span>
+                `;
+                if (card.lotCardCount) {
+                    document.getElementById('lotCardCountRow').style.display = 'flex';
+                    document.getElementById('lotCardCountValue').textContent = card.lotCardCount;
+                }
+            }
+
             if (card.condition) {
                 document.getElementById('conditionBadge').innerHTML = `
                     <div class="condition-badge">

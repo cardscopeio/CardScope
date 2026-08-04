@@ -516,6 +516,7 @@
             </a>
             <nav>
                 <a href="index.html">Browse</a>
+                <a href="index.html?view=bargain">Bargain Box</a>
                 <a href="sell-cards.html" class="active">Sell Cards</a>
                 <a href="#about">About</a>
                 <a href="contact.html">Contact</a>
@@ -533,9 +534,21 @@
         <form class="sell-form" id="sellForm" onsubmit="submitListing(event)">
             <!-- Basic Information -->
             <h2 class="section-title">Basic Information</h2>
+
+            <label class="terms-checkbox" style="margin-bottom: 1.5rem;">
+                <input type="checkbox" id="isBargainBox" onchange="toggleBargainBox()">
+                <span class="terms-text"><strong>This is a Bargain Box lot</strong> — multiple cards sold together as one group, not a single card.</span>
+            </label>
+
+            <div class="form-group full-width" id="lotCardCountGroup" style="display: none;">
+                <label>Number of Cards in Lot <span class="required">*</span></label>
+                <input type="number" id="lotCardCount" name="lotCardCount" placeholder="10" min="2" step="1">
+                <div class="input-hint">How many individual cards are included in this lot.</div>
+            </div>
+
             <div class="form-grid">
                 <div class="form-group">
-                    <label>Player Name <span class="required">*</span></label>
+                    <label id="playerNameLabel">Player Name <span class="required">*</span></label>
                     <input type="text" id="playerName" name="playerName" placeholder="Mike Trout" required>
                 </div>
 
@@ -561,6 +574,7 @@
                         <option value="Parallel">Parallel</option>
                         <option value="Relic">Relic</option>
                         <option value="Patch">Patch</option>
+                        <option value="Lot">Lot / Bargain Box</option>
                         <option value="Other">Other</option>
                     </select>
                 </div>
@@ -649,6 +663,7 @@
                         <option value="Good">Good</option>
                         <option value="Fair">Fair</option>
                         <option value="Poor">Poor</option>
+                        <option value="Mixed / Various">Mixed / Various (lot with multiple conditions)</option>
                     </select>
                 </div>
             </div>
@@ -657,12 +672,12 @@
             <h2 class="section-title">Pricing</h2>
             <div class="form-grid">
                 <div class="form-group">
-                    <label>Asking Price <span class="required">*</span></label>
+                    <label id="priceLabel">Asking Price <span class="required">*</span></label>
                     <div class="price-input-wrapper">
                         <span class="currency-symbol">$</span>
                         <input type="number" id="price" name="price" placeholder="8750" min="1" step="1" required>
                     </div>
-                    <div class="input-hint">Enter amount in USD</div>
+                    <div class="input-hint" id="priceHint">Enter amount in USD</div>
                 </div>
 
                 <div class="form-group">
@@ -675,10 +690,10 @@
             </div>
 
             <!-- Images -->
-            <h2 class="section-title">Card Images</h2>
+            <h2 class="section-title" id="imagesSectionTitle">Card Images</h2>
             <div class="form-grid">
                 <div class="image-upload-container">
-                    <label>Front of Card <span class="required">*</span></label>
+                    <label id="frontImageLabel">Front of Card <span class="required">*</span></label>
                     <div class="image-upload-zone" id="frontUploadZone" onclick="document.getElementById('frontImageInput').click()">
                         <div class="upload-icon">📸</div>
                         <div class="upload-text">Click to upload or drag and drop</div>
@@ -689,7 +704,7 @@
                 </div>
 
                 <div class="image-upload-container">
-                    <label>Back of Card <span class="required">*</span></label>
+                    <label id="backImageLabel">Back of Card <span class="required">*</span></label>
                     <div class="image-upload-zone" id="backUploadZone" onclick="document.getElementById('backImageInput').click()">
                         <div class="upload-icon">📸</div>
                         <div class="upload-text">Click to upload or drag and drop</div>
@@ -699,7 +714,7 @@
                     <div class="image-preview-grid" id="backImagePreview"></div>
                 </div>
             </div>
-            <div class="input-hint" style="margin-bottom: 2rem;">Front and back images power the hover-to-flip preview shown on the browse page and this card's listing.</div>
+            <div class="input-hint" style="margin-bottom: 2rem;" id="imagesHint">Front and back images power the hover-to-flip preview shown on the browse page and this card's listing.</div>
 
             <!-- Description -->
             <h2 class="section-title">Description</h2>
@@ -749,6 +764,49 @@
         let cardImages = { front: null, back: null };
         let conditionType = 'graded';
 
+        // Bargain Box: a listing that groups multiple cards into one lot
+        // sold together (e.g. "10-Card Mixed Rookie Lot"), instead of a
+        // single card. Reuses the same card record/fields - isBargainBox +
+        // lotCardCount just flag it so index.html can filter/badge it.
+        function toggleBargainBox() {
+            const isBargainBox = document.getElementById('isBargainBox').checked;
+
+            document.getElementById('lotCardCountGroup').style.display = isBargainBox ? 'block' : 'none';
+            document.getElementById('lotCardCount').required = isBargainBox;
+
+            document.getElementById('playerNameLabel').innerHTML = isBargainBox
+                ? 'Lot Title <span class="required">*</span>'
+                : 'Player Name <span class="required">*</span>';
+            document.getElementById('playerName').placeholder = isBargainBox
+                ? '10-Card Mixed Rookie Lot'
+                : 'Mike Trout';
+
+            document.getElementById('priceLabel').innerHTML = isBargainBox
+                ? 'Lot Price <span class="required">*</span>'
+                : 'Asking Price <span class="required">*</span>';
+            document.getElementById('priceHint').textContent = isBargainBox
+                ? 'Total price for the whole lot, not per card'
+                : 'Enter amount in USD';
+
+            document.getElementById('imagesSectionTitle').textContent = isBargainBox ? 'Lot Images' : 'Card Images';
+            document.getElementById('frontImageLabel').innerHTML = isBargainBox
+                ? 'Lot Photo <span class="required">*</span>'
+                : 'Front of Card <span class="required">*</span>';
+            document.getElementById('backImageLabel').textContent = isBargainBox
+                ? 'Additional Photo (optional)'
+                : 'Back of Card *';
+            document.getElementById('backImageLabel').innerHTML = isBargainBox
+                ? 'Additional Photo (optional)'
+                : 'Back of Card <span class="required">*</span>';
+            document.getElementById('imagesHint').textContent = isBargainBox
+                ? 'One clear photo showing the cards included in the lot is enough - add a second angle if it helps buyers see condition.'
+                : 'Front and back images power the hover-to-flip preview shown on the browse page and this card\'s listing.';
+
+            if (isBargainBox && document.getElementById('cardType').value !== 'Lot') {
+                document.getElementById('cardType').value = 'Lot';
+            }
+        }
+
         async function loadCardForEdit() {
             let card;
             try {
@@ -783,6 +841,12 @@
             document.getElementById('description').value = card.description || '';
             // card.price is formatted like "$2,750" - strip to a plain number
             document.getElementById('price').value = (card.price || '').replace(/[^0-9.]/g, '');
+
+            if (card.isBargainBox) {
+                document.getElementById('isBargainBox').checked = true;
+                document.getElementById('lotCardCount').value = card.lotCardCount || '';
+                toggleBargainBox();
+            }
 
             // Best-effort split of the stored "condition" string (e.g. "PSA 9")
             // back into grading company + grade, or treat as ungraded if it
@@ -895,8 +959,18 @@
         async function submitListing(event) {
             event.preventDefault();
 
-            if (!cardImages.front || !cardImages.back) {
+            const isBargainBox = document.getElementById('isBargainBox').checked;
+
+            if (!cardImages.front) {
+                alert(isBargainBox ? 'Please upload a photo of the lot' : 'Please upload both a front and back image of your card');
+                return;
+            }
+            if (!isBargainBox && !cardImages.back) {
                 alert('Please upload both a front and back image of your card');
+                return;
+            }
+            if (isBargainBox && !document.getElementById('lotCardCount').value) {
+                alert('Please enter how many cards are included in this lot');
                 return;
             }
 
@@ -917,6 +991,8 @@
                 emoji: "⚾",
                 frontImageUrl: cardImages.front,
                 backImageUrl: cardImages.back,
+                isBargainBox: isBargainBox,
+                lotCardCount: isBargainBox ? parseInt(document.getElementById('lotCardCount').value, 10) : null,
             };
 
             // Add condition based on graded/ungraded

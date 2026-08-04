@@ -17,19 +17,28 @@ card object, so the frontend migration is a data-source swap, not a rewrite:
     { player, year, brand, type, era, condition, price, emoji, description,
       isUserSubmitted, dateAdded }
 """
+import json
 import re
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
-from typing import Optional
+from typing import List, Optional
 
 from .database import (
     get_connection, init_db, slugify, create_user, get_user_by_email, get_user_by_id,
     create_offer, get_offers_received, get_offers_sent, get_offer_by_id, update_offer_status,
+    get_cards_by_slugs, create_lot_offer, get_lot_offers_received, get_lot_offers_sent,
+    get_lot_offer_by_id, update_lot_offer_status,
 )
 from .auth import hash_password, verify_password, create_access_token, decode_access_token
 
 EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+# Bargain Box lot offers can't undercut the combined individual list price by
+# more than this - keeps buyers from bundling cards just to lowball a
+# seller. Mirrored in the frontend (cards-data.js LOT_OFFER_MIN_FRACTION) for
+# client-side guidance, but this is the number that's actually enforced.
+LOT_OFFER_MIN_FRACTION = 0.8
 
 app = FastAPI(title="CardScope.io API")
 
@@ -152,6 +161,8 @@ def row_to_card(row) -> dict:
         "frontImageUrl": row["front_image_url"],
         "backImageUrl": row["back_image_url"],
         "userId": row["user_id"],
+        "isBargainBox": bool(row["is_bargain_box"]),
+        "lotCardCount": row["lot_card_count"],
     }
 
 
@@ -171,6 +182,10 @@ class CardIn(BaseModel):
     serialNumber: Optional[str] = None
     frontImageUrl: Optional[str] = None
     backImageUrl: Optional[str] = None
+    isBargainBox: bool = False
+    lotCardCount: Optional[int] = Field(
+        None, description="Number of cards included in this lot - only meaningful when isBargainBox is true"
+    )
 
 
 @app.get("/api/cards")
@@ -225,8 +240,9 @@ def create_card(card: CardIn, current_user=Depends(get_current_user)):
         INSERT INTO cards
             (slug, player, year, brand, type, era, condition, price_cents,
              emoji, description, manufacturer, autographed, numbered,
-             serial_number, is_user_submitted, front_image_url, back_image_url, user_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
+             serial_number, is_user_submitted, front_image_url, back_image_url, user_id,
+             is_bargain_box, lot_card_count)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)
         """,
         (
             slug, card.player, card.year, card.brand, card.type, card.era,
@@ -234,6 +250,7 @@ def create_card(card: CardIn, current_user=Depends(get_current_user)):
             card.description, card.manufacturer, int(card.autographed),
             int(card.numbered), card.serialNumber,
             card.frontImageUrl, card.backImageUrl, current_user["id"],
+            int(card.isBargainBox), card.lotCardCount,
         ),
     )
     conn.commit()
@@ -261,7 +278,8 @@ def update_card(slug: str, card: CardIn, current_user=Depends(get_current_user))
             player = ?, year = ?, brand = ?, type = ?, era = ?, condition = ?,
             price_cents = ?, emoji = ?, description = ?, manufacturer = ?,
             autographed = ?, numbered = ?, serial_number = ?,
-            front_image_url = ?, back_image_url = ?
+            front_image_url = ?, back_image_url = ?,
+            is_bargain_box = ?, lot_card_count = ?
         WHERE slug = ?
         """,
         (
@@ -269,7 +287,8 @@ def update_card(slug: str, card: CardIn, current_user=Depends(get_current_user))
             card.condition, int(round(card.price * 100)), card.emoji,
             card.description, card.manufacturer, int(card.autographed),
             int(card.numbered), card.serialNumber,
-            card.frontImageUrl, card.backImageUrl, slug,
+            card.frontImageUrl, card.backImageUrl,
+            int(card.isBargainBox), card.lotCardCount, slug,
         ),
     )
     conn.commit()
@@ -363,6 +382,108 @@ def respond_to_offer(offer_id: str, payload: OfferStatusIn, current_user=Depends
         raise HTTPException(status_code=403, detail="Only the seller can respond to this offer")
     row = update_offer_status(offer_id, payload.status)
     return row_to_offer(row)
+
+
+# --- Lot Offers (Bargain Box: one combined offer across several cards) ---
+#
+# A buyer selects 2+ individually-listed cards (must all belong to the same
+# seller) and proposes a single price for the group. The offer amount must
+# be at least LOT_OFFER_MIN_FRACTION (80%) of the combined list price - this
+# is a hard server-side floor, not just a UI hint, so no lowball lot offer
+# can be submitted at all. Beyond that, it's just the normal offer flow:
+# the seller still manually Accepts/Declines in offers.html, same as any
+# single-card offer - this feature only guards against outlandish opening
+# numbers, it doesn't auto-accept anything.
+
+class LotOfferIn(BaseModel):
+    cardSlugs: List[str]
+    amount: float = Field(..., description="Proposed price in dollars for the whole lot, not per card")
+    message: Optional[str] = ""
+
+    @field_validator("cardSlugs")
+    @classmethod
+    def at_least_two_distinct_cards(cls, v):
+        if len(v) < 2:
+            raise ValueError("A lot offer needs at least 2 cards - use the regular offer flow for a single card")
+        if len(set(v)) != len(v):
+            raise ValueError("Duplicate cards selected")
+        return v
+
+
+def row_to_lot_offer(row) -> dict:
+    total_dollars = row["total_list_price_cents"] / 100
+    amount_dollars = row["amount_cents"] / 100
+    return {
+        "id": row["id"],
+        "cardSlugs": json.loads(row["card_slugs"]),
+        "buyerUserId": row["buyer_user_id"],
+        "sellerUserId": row["seller_user_id"],
+        "totalListPrice": f"${total_dollars:,.0f}" if total_dollars == int(total_dollars) else f"${total_dollars:,.2f}",
+        "amount": f"${amount_dollars:,.0f}" if amount_dollars == int(amount_dollars) else f"${amount_dollars:,.2f}",
+        "percentOfList": round((amount_dollars / total_dollars) * 100) if total_dollars else None,
+        "message": row["message"],
+        "status": row["status"],
+        "createdAt": row["created_at"],
+    }
+
+
+@app.post("/api/lot-offers", status_code=201)
+def make_lot_offer(payload: LotOfferIn, current_user=Depends(get_current_user)):
+    rows = get_cards_by_slugs(payload.cardSlugs)
+
+    found_slugs = {r["slug"] for r in rows}
+    missing = [s for s in payload.cardSlugs if s not in found_slugs]
+    if missing:
+        raise HTTPException(status_code=404, detail=f"Card(s) not found: {', '.join(missing)}")
+
+    seller_ids = {r["user_id"] for r in rows}
+    if len(seller_ids) != 1:
+        raise HTTPException(status_code=400, detail="All cards in a lot offer must be listed by the same seller")
+    seller_user_id = seller_ids.pop()
+
+    if seller_user_id == current_user["id"]:
+        raise HTTPException(status_code=400, detail="You can't make a lot offer on your own listings")
+
+    total_list_price_cents = sum(r["price_cents"] for r in rows)
+    amount_cents = int(round(payload.amount * 100))
+    min_amount_cents = int(round(total_list_price_cents * LOT_OFFER_MIN_FRACTION))
+    if amount_cents < min_amount_cents:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Lot offers must be at least {int(LOT_OFFER_MIN_FRACTION * 100)}% of the combined list price "
+                f"(minimum ${min_amount_cents / 100:,.2f} for this selection)"
+            ),
+        )
+
+    row = create_lot_offer(
+        payload.cardSlugs, current_user["id"], seller_user_id,
+        total_list_price_cents, amount_cents, payload.message,
+    )
+    return row_to_lot_offer(row)
+
+
+@app.get("/api/my-lot-offers/received")
+def list_lot_offers_received(current_user=Depends(get_current_user)):
+    rows = get_lot_offers_received(current_user["id"])
+    return [row_to_lot_offer(r) for r in rows]
+
+
+@app.get("/api/my-lot-offers/sent")
+def list_lot_offers_sent(current_user=Depends(get_current_user)):
+    rows = get_lot_offers_sent(current_user["id"])
+    return [row_to_lot_offer(r) for r in rows]
+
+
+@app.patch("/api/lot-offers/{offer_id}")
+def respond_to_lot_offer(offer_id: str, payload: OfferStatusIn, current_user=Depends(get_current_user)):
+    offer = get_lot_offer_by_id(offer_id)
+    if offer is None:
+        raise HTTPException(status_code=404, detail="Lot offer not found")
+    if offer["seller_user_id"] != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Only the seller can respond to this lot offer")
+    row = update_lot_offer_status(offer_id, payload.status)
+    return row_to_lot_offer(row)
 
 
 @app.get("/api/health")

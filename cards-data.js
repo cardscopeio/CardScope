@@ -105,6 +105,56 @@ async function respondToOffer(offerId, status) {
     return res.json();
 }
 
+// --- Lot Offers (Bargain Box: one combined offer across several cards) ---
+// The buyer selects multiple individually-listed cards (all from the same
+// seller) and proposes one price for the group. LOT_OFFER_MIN_FRACTION is
+// mirrored here purely so the UI can guide the buyer to a valid number
+// before submitting - the backend (main.py LOT_OFFER_MIN_FRACTION) is the
+// real enforcement point and will reject anything below it regardless of
+// what the client sends.
+const LOT_OFFER_MIN_FRACTION = 0.8;
+
+async function makeLotOffer(cardSlugs, { amount, message }) {
+    const res = await fetch(`${API_BASE_URL}/api/lot-offers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader() },
+        body: JSON.stringify({ cardSlugs, amount, message: message || "" }),
+    });
+    if (res.status === 401) throw new AuthRequiredError();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || `Failed to send lot offer (${res.status})`);
+    return data;
+}
+
+async function fetchLotOffersReceived() {
+    const res = await fetch(`${API_BASE_URL}/api/my-lot-offers/received`, {
+        headers: { ...authHeader() },
+    });
+    if (res.status === 401) throw new AuthRequiredError();
+    if (!res.ok) throw new Error(`Failed to load lot offers (${res.status})`);
+    return res.json();
+}
+
+async function fetchLotOffersSent() {
+    const res = await fetch(`${API_BASE_URL}/api/my-lot-offers/sent`, {
+        headers: { ...authHeader() },
+    });
+    if (res.status === 401) throw new AuthRequiredError();
+    if (!res.ok) throw new Error(`Failed to load lot offers (${res.status})`);
+    return res.json();
+}
+
+async function respondToLotOffer(offerId, status) {
+    const res = await fetch(`${API_BASE_URL}/api/lot-offers/${encodeURIComponent(offerId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeader() },
+        body: JSON.stringify({ status }),
+    });
+    if (res.status === 401) throw new AuthRequiredError();
+    if (!res.ok) throw new Error(`Failed to respond to lot offer (${res.status})`);
+    return res.json();
+}
+
 // --- Auth ---
 // Sessions are a JWT stored in localStorage - simple and fine for a
 // marketplace at this stage. No refresh-token rotation, no password-reset

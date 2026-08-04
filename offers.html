@@ -212,6 +212,31 @@
             margin-bottom: 1rem;
         }
 
+        .lot-tag {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+
+        .lot-card-list {
+            color: #8899a6;
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .lot-price-detail {
+            color: #8899a6;
+            font-size: 0.8rem;
+            margin-top: 0.2rem;
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 1rem;
@@ -232,7 +257,7 @@
         <a href="index.html" class="back-link">← Back to Homepage</a>
 
         <h1>My Offers</h1>
-        <p class="subtitle">Offers and messages on your listings, plus offers you've sent</p>
+        <p class="subtitle">Offers and messages on your listings, plus offers you've sent — including Bargain Box lot offers</p>
 
         <div class="tabs">
             <div class="tab active" id="receivedTab" onclick="switchTab('received')">Received</div>
@@ -288,7 +313,35 @@
                 return;
             }
 
-            list.innerHTML = offers.map((offer) => `
+            list.innerHTML = offers.map((offer) => {
+                if (offer.kind === 'lot') {
+                    return `
+                    <div class="offer-item">
+                        <div class="offer-top-row">
+                            <div>
+                                <span class="lot-tag">📦 ${offer.cardSlugs.length}-CARD LOT</span>
+                            </div>
+                            <div class="offer-amount">${offer.amount}</div>
+                        </div>
+                        <div class="lot-card-list">${offer.cardSlugs.map(s => s.replace(/-/g, ' ')).join(', ')}</div>
+                        <div class="offer-message">${offer.message || '(no message)'}</div>
+                        <div class="lot-price-detail">List price ${offer.totalListPrice} • offer is ${offer.percentOfList}% of list</div>
+                        <div class="offer-meta-row">
+                            <div>
+                                <span class="offer-status ${offer.status}">${offer.status}</span>
+                                <span class="offer-date">${formatDate(offer.createdAt)}</span>
+                            </div>
+                            ${currentTab === 'received' && offer.status === 'pending' ? `
+                                <div class="offer-actions">
+                                    <button class="btn-accept" onclick="respond('${offer.id}', 'accepted', 'lot')">Accept</button>
+                                    <button class="btn-decline" onclick="respond('${offer.id}', 'declined', 'lot')">Decline</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+                }
+                return `
                 <div class="offer-item">
                     <div class="offer-top-row">
                         <a href="card.html?card=${offer.cardSlug}" class="offer-card-link">${offer.cardSlug.replace(/-/g, ' ')}</a>
@@ -302,18 +355,23 @@
                         </div>
                         ${currentTab === 'received' && offer.status === 'pending' ? `
                             <div class="offer-actions">
-                                <button class="btn-accept" onclick="respond('${offer.id}', 'accepted')">Accept</button>
-                                <button class="btn-decline" onclick="respond('${offer.id}', 'declined')">Decline</button>
+                                <button class="btn-accept" onclick="respond('${offer.id}', 'accepted', 'single')">Accept</button>
+                                <button class="btn-decline" onclick="respond('${offer.id}', 'declined', 'single')">Decline</button>
                             </div>
                         ` : ''}
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
-        async function respond(offerId, status) {
+        async function respond(offerId, status, kind) {
             try {
-                await respondToOffer(offerId, status);
+                if (kind === 'lot') {
+                    await respondToLotOffer(offerId, status);
+                } else {
+                    await respondToOffer(offerId, status);
+                }
             } catch (err) {
                 console.error(err);
                 if (err instanceof AuthRequiredError) {
@@ -329,10 +387,20 @@
 
         async function loadOffers() {
             try {
-                [receivedOffers, sentOffers] = await Promise.all([
+                const [singleReceived, singleSent, lotReceived, lotSent] = await Promise.all([
                     fetchOffersReceived(),
                     fetchOffersSent(),
+                    fetchLotOffersReceived(),
+                    fetchLotOffersSent(),
                 ]);
+                receivedOffers = [
+                    ...singleReceived.map(o => ({ ...o, kind: 'single' })),
+                    ...lotReceived.map(o => ({ ...o, kind: 'lot' })),
+                ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                sentOffers = [
+                    ...singleSent.map(o => ({ ...o, kind: 'single' })),
+                    ...lotSent.map(o => ({ ...o, kind: 'lot' })),
+                ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             } catch (err) {
                 console.error(err);
                 if (err instanceof AuthRequiredError) {

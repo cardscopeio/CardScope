@@ -202,6 +202,226 @@
             animation: newBadgePulse 2s ease-in-out infinite;
         }
 
+        .lot-badge {
+            position: absolute;
+            top: 0.75rem;
+            left: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 700;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+        }
+
+        /* Bargain Box lot-builder: select multiple individual cards to
+           propose one combined offer for the group. */
+        .lot-select-overlay {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            z-index: 2;
+        }
+
+        .lot-select-overlay input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            accent-color: #f59e0b;
+        }
+
+        .lot-selected {
+            outline: 2px solid #f59e0b;
+            outline-offset: -1px;
+        }
+
+        .lot-builder-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 200;
+            background: rgba(15, 20, 25, 0.97);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(245, 158, 11, 0.4);
+            padding: 1rem 2rem;
+            display: none;
+        }
+
+        .lot-builder-bar.visible {
+            display: block;
+        }
+
+        .lot-builder-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .lot-builder-summary {
+            color: #e1e8ed;
+            font-size: 0.95rem;
+        }
+
+        .lot-builder-summary strong {
+            color: #f59e0b;
+        }
+
+        .lot-builder-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .btn-lot-clear {
+            padding: 0.75rem 1.25rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #8899a6;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-lot-propose {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .lot-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 300;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .lot-modal-overlay.visible {
+            display: flex;
+        }
+
+        .lot-modal {
+            background: #1a2332;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 480px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .lot-modal h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: #f59e0b;
+        }
+
+        .lot-modal-cardlist {
+            font-size: 0.9rem;
+            color: #c9d1d9;
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+
+        .lot-modal-totals {
+            background: rgba(245, 158, 11, 0.08);
+            border: 1px solid rgba(245, 158, 11, 0.25);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1.25rem;
+            font-size: 0.9rem;
+            color: #e1e8ed;
+        }
+
+        .lot-modal-totals div {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.35rem;
+        }
+
+        .lot-modal-totals div:last-child {
+            margin-bottom: 0;
+            font-weight: 700;
+            color: #f59e0b;
+        }
+
+        .lot-modal label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #e1e8ed;
+        }
+
+        .lot-modal input,
+        .lot-modal textarea {
+            width: 100%;
+            padding: 0.85rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #e1e8ed;
+            font-size: 1rem;
+            font-family: inherit;
+            margin-bottom: 1rem;
+        }
+
+        .lot-modal textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .lot-modal-error {
+            color: #ef4444;
+            font-size: 0.85rem;
+            margin: -0.5rem 0 1rem;
+            display: none;
+        }
+
+        .lot-modal-buttons {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .lot-modal-buttons button {
+            flex: 1;
+            padding: 0.9rem;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+        }
+
+        .lot-modal-cancel {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            color: #8899a6;
+        }
+
+        .lot-modal-submit {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+
+        .lot-modal-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         @keyframes newBadgePulse {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.05); }
@@ -377,6 +597,7 @@
             </a>
             <nav>
                 <a href="index.html">Browse</a>
+                <a href="index.html?view=bargain">Bargain Box</a>
                 <a href="sell-cards.html">Sell Cards</a>
                 <a href="#about">About</a>
                 <a href="contact.html">Contact</a>
@@ -396,11 +617,48 @@
         <button class="filter-btn" data-filter="modern">Modern</button>
         <button class="filter-btn" data-filter="graded">Graded</button>
         <button class="filter-btn" data-filter="autograph">Autographs</button>
+        <button class="filter-btn" data-filter="bargain">Bargain Box</button>
     </div>
 
     <div class="cards-header" id="cardsHeader"></div>
 
     <div class="cards-container" id="cardsContainer"></div>
+
+    <!-- Bargain Box lot builder: appears once 2+ cards are checked -->
+    <div class="lot-builder-bar" id="lotBuilderBar">
+        <div class="lot-builder-content">
+            <div class="lot-builder-summary" id="lotBuilderSummary"></div>
+            <div class="lot-builder-actions">
+                <button class="btn-lot-clear" onclick="clearLotSelection()">Clear</button>
+                <button class="btn-lot-propose" onclick="openLotOfferModal()">Propose Lot Offer</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="lot-modal-overlay" id="lotModalOverlay">
+        <div class="lot-modal">
+            <h3>📦 Propose a Lot Offer</h3>
+            <div class="lot-modal-cardlist" id="lotModalCardList"></div>
+            <div class="lot-modal-totals">
+                <div><span>Combined list price</span><span id="lotModalTotal">-</span></div>
+                <div><span>Minimum offer (80%)</span><span id="lotModalMin">-</span></div>
+            </div>
+            <form id="lotOfferForm" onsubmit="submitLotOffer(event)">
+                <label>Your Offer (whole lot, not per card)</label>
+                <div class="price-input-wrapper" style="position: relative;">
+                    <span class="currency-symbol" style="position:absolute;left:1rem;top:50%;transform:translateY(-50%);color:#8899a6;">$</span>
+                    <input type="number" id="lotOfferAmount" min="1" step="1" style="padding-left: 2.5rem;" required>
+                </div>
+                <div class="lot-modal-error" id="lotModalError"></div>
+                <label>Message to Seller</label>
+                <textarea id="lotOfferMessage" placeholder="Introduce your offer, e.g. why you're bundling these..."></textarea>
+                <div class="lot-modal-buttons">
+                    <button type="button" class="lot-modal-cancel" onclick="closeLotOfferModal()">Cancel</button>
+                    <button type="submit" class="lot-modal-submit" id="lotOfferSubmitBtn">Send Offer</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script src="config.js"></script>
     <script src="cards-data.js"></script>
@@ -412,6 +670,126 @@
 
         let currentFilter = 'all';
         let searchTerm = '';
+
+        // Bargain Box lot builder state - a Map of cardId -> card object for
+        // whatever's currently checked, so the floating bar/modal can total
+        // prices without re-fetching. Cleared on submit or explicit Clear.
+        let lotSelection = new Map();
+
+        function toggleLotSelect(cardId, checked) {
+            const card = cardsData.find(c => c.id === cardId);
+            if (!card) return;
+            if (checked) {
+                lotSelection.set(cardId, card);
+            } else {
+                lotSelection.delete(cardId);
+            }
+            updateLotBuilderBar();
+            renderCards();
+        }
+
+        function clearLotSelection() {
+            lotSelection.clear();
+            updateLotBuilderBar();
+            renderCards();
+        }
+
+        function lotPriceCents(card) {
+            // card.price is a formatted string like "$2,750" or "$1,930.50"
+            return Math.round(parseFloat((card.price || '0').replace(/[^0-9.]/g, '')) * 100);
+        }
+
+        function formatCents(cents) {
+            const dollars = cents / 100;
+            return dollars === Math.round(dollars) ? `$${dollars.toLocaleString()}` : `$${dollars.toFixed(2)}`;
+        }
+
+        function lotTotals() {
+            const cards = Array.from(lotSelection.values());
+            const totalCents = cards.reduce((sum, c) => sum + lotPriceCents(c), 0);
+            const minCents = Math.round(totalCents * LOT_OFFER_MIN_FRACTION);
+            return { cards, totalCents, minCents };
+        }
+
+        function updateLotBuilderBar() {
+            const bar = document.getElementById('lotBuilderBar');
+            const { cards, totalCents, minCents } = lotTotals();
+
+            if (cards.length < 2) {
+                bar.classList.remove('visible');
+                return;
+            }
+
+            bar.classList.add('visible');
+            document.getElementById('lotBuilderSummary').innerHTML =
+                `<strong>${cards.length} cards</strong> selected • Combined list price <strong>${formatCents(totalCents)}</strong> • Minimum lot offer (80%) <strong>${formatCents(minCents)}</strong>`;
+        }
+
+        function openLotOfferModal() {
+            if (!isLoggedIn()) {
+                window.location.href = 'login.html?next=' + encodeURIComponent('index.html?view=bargain');
+                return;
+            }
+            const { cards, totalCents, minCents } = lotTotals();
+            if (cards.length < 2) return;
+
+            document.getElementById('lotModalCardList').innerHTML =
+                cards.map(c => `• ${c.player} (${c.year}) — ${c.price}`).join('<br>');
+            document.getElementById('lotModalTotal').textContent = formatCents(totalCents);
+            document.getElementById('lotModalMin').textContent = formatCents(minCents);
+            document.getElementById('lotOfferAmount').min = Math.ceil(minCents / 100);
+            document.getElementById('lotOfferAmount').value = Math.ceil(minCents / 100);
+            document.getElementById('lotModalError').style.display = 'none';
+            document.getElementById('lotModalOverlay').classList.add('visible');
+        }
+
+        function closeLotOfferModal() {
+            document.getElementById('lotModalOverlay').classList.remove('visible');
+        }
+
+        async function submitLotOffer(event) {
+            event.preventDefault();
+            const { cards, minCents } = lotTotals();
+            const errorEl = document.getElementById('lotModalError');
+            errorEl.style.display = 'none';
+
+            const amountRaw = parseFloat(document.getElementById('lotOfferAmount').value);
+            if (!amountRaw || Math.round(amountRaw * 100) < minCents) {
+                errorEl.textContent = `Offer must be at least ${formatCents(minCents)} (80% of the combined list price) — sellers won't see anything lower.`;
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            const submitBtn = document.getElementById('lotOfferSubmitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending...';
+
+            try {
+                await makeLotOffer(cards.map(c => c.id), {
+                    amount: amountRaw,
+                    message: document.getElementById('lotOfferMessage').value,
+                });
+            } catch (err) {
+                console.error(err);
+                if (err instanceof AuthRequiredError) {
+                    alert('Your session expired — please sign in again.');
+                    logout();
+                    window.location.href = 'login.html?next=' + encodeURIComponent('index.html?view=bargain');
+                    return;
+                }
+                errorEl.textContent = err.message || 'Could not send your lot offer. Please try again.';
+                errorEl.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send Offer';
+                return;
+            }
+
+            alert('✓ Sent! The seller will see your lot offer in their offers inbox and can accept or decline it.');
+            closeLotOfferModal();
+            clearLotSelection();
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Send Offer';
+        }
 
         function renderCards() {
             const container = document.getElementById('cardsContainer');
@@ -429,6 +807,12 @@
                     filteredCards = filteredCards.filter(card => card.era === 'vintage');
                 } else if (currentFilter === 'modern') {
                     filteredCards = filteredCards.filter(card => card.era === 'modern');
+                } else if (currentFilter === 'bargain') {
+                    // Bargain Box shows everything: pre-built lots (already
+                    // isBargainBox) AND every individual card, since
+                    // individual cards are exactly what gets checked off to
+                    // build an ad-hoc lot offer below.
+                    filteredCards = filteredCards;
                 }
             }
 
@@ -443,17 +827,30 @@
 
             // Update header
             const userCardCount = cardsData.filter(card => card.isUserSubmitted).length;
-            if (userCardCount > 0) {
+            if (currentFilter === 'bargain') {
+                header.innerHTML = `Check the box on any card below to build your own lot, or browse pre-built lots • <span class="highlight">${filteredCards.filter(c => c.isBargainBox).length} pre-built lot${filteredCards.filter(c => c.isBargainBox).length === 1 ? '' : 's'} listed</span>`;
+            } else if (userCardCount > 0) {
                 header.innerHTML = `Showing ${filteredCards.length} cards • <span class="highlight">${userCardCount} new user listing${userCardCount > 1 ? 's' : ''}</span>`;
             } else {
                 header.innerHTML = `Showing ${filteredCards.length} cards`;
             }
 
-            container.innerHTML = filteredCards.map((card) => `
-                <div class="card" onclick="viewCard('${card.id}')">
+            container.innerHTML = filteredCards.map((card) => {
+                const eligibleForLot = currentFilter === 'bargain' && !card.isBargainBox &&
+                    !(isLoggedIn() && card.userId === getAuthUserId());
+                const isSelected = lotSelection.has(card.id);
+                return `
+                <div class="card ${isSelected ? 'lot-selected' : ''}" onclick="viewCard('${card.id}')">
                     <div class="card-image">
                         ${cardImageMarkup(card, '3rem')}
+                        ${card.isBargainBox ? `<span class="lot-badge">${card.lotCardCount ? card.lotCardCount + '-CARD LOT' : 'LOT'}</span>` : ''}
                         ${card.isUserSubmitted ? '<span class="new-badge">NEW</span>' : ''}
+                        ${eligibleForLot ? `
+                            <span class="lot-select-overlay" onclick="event.stopPropagation()">
+                                <input type="checkbox" title="Add to lot" ${isSelected ? 'checked' : ''}
+                                    onchange="toggleLotSelect('${card.id}', this.checked)">
+                            </span>
+                        ` : ''}
                     </div>
                     <div class="card-content">
                         <div class="card-player">${card.player}</div>
@@ -463,7 +860,8 @@
                         <div class="card-price">${card.price}</div>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
             initCardFlipTouchSupport(container);
         }
 
@@ -488,6 +886,17 @@
         async function init() {
             const header = document.getElementById('cardsHeader');
             header.innerHTML = 'Loading cards…';
+
+            // Support linking straight into the Bargain Box view (e.g. from
+            // the nav link) via index.html?view=bargain.
+            const requestedView = new URLSearchParams(window.location.search).get('view');
+            if (requestedView === 'bargain') {
+                currentFilter = 'bargain';
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                const bargainBtn = document.querySelector('.filter-btn[data-filter="bargain"]');
+                if (bargainBtn) bargainBtn.classList.add('active');
+            }
+
             try {
                 cardsData = await fetchAllCards();
             } catch (err) {

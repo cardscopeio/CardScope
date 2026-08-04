@@ -23,6 +23,7 @@ already written against - only this file needed to change syntax.
 Requires a DATABASE_URL environment variable (a Neon connection string,
 e.g. postgresql://user:pass@ep-xxxx.neon.tech/neondb?sslmode=require).
 """
+import json
 import os
 import re
 import uuid
@@ -109,10 +110,18 @@ def init_db():
             date_added TEXT DEFAULT (to_char(now() at time zone 'utc', 'YYYY-MM-DD HH24:MI:SS')),
             front_image_url TEXT,
             back_image_url TEXT,
-            user_id TEXT
+            user_id TEXT,
+            is_bargain_box INTEGER DEFAULT 0,
+            lot_card_count INTEGER
         )
         """
     )
+    # Migration for databases created before the Bargain Box (multi-card lot)
+    # feature existed - CREATE TABLE IF NOT EXISTS above is a no-op against
+    # an already-existing table, so already-deployed Postgres instances need
+    # these columns added explicitly. Safe to run on every startup.
+    conn.execute("ALTER TABLE cards ADD COLUMN IF NOT EXISTS is_bargain_box INTEGER DEFAULT 0")
+    conn.execute("ALTER TABLE cards ADD COLUMN IF NOT EXISTS lot_card_count INTEGER")
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS users (
@@ -132,6 +141,28 @@ def init_db():
             seller_user_id TEXT,
             amount_cents INTEGER,
             message TEXT NOT NULL,
+            status TEXT DEFAULT 'pending',
+            created_at TEXT DEFAULT (to_char(now() at time zone 'utc', 'YYYY-MM-DD HH24:MI:SS'))
+        )
+        """
+    )
+    # Bargain Box lot offers: a buyer selects multiple individually-listed
+    # cards (must all belong to one seller) and proposes ONE combined price
+    # for the group. card_slugs is a JSON array (not a join table - keeps
+    # this symmetric with the single-card `offers` table above and avoids a
+    # migration-heavy schema for what's still a lightweight feature). The
+    # 80%-of-combined-list-price floor is enforced in main.py at write time,
+    # not here - this table just stores the snapshot once validated.
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS lot_offers (
+            id TEXT PRIMARY KEY,
+            card_slugs TEXT NOT NULL,
+            buyer_user_id TEXT NOT NULL,
+            seller_user_id TEXT NOT NULL,
+            total_list_price_cents INTEGER NOT NULL,
+            amount_cents INTEGER NOT NULL,
+            message TEXT,
             status TEXT DEFAULT 'pending',
             created_at TEXT DEFAULT (to_char(now() at time zone 'utc', 'YYYY-MM-DD HH24:MI:SS'))
         )
@@ -229,6 +260,79 @@ def update_offer_status(offer_id, status):
     conn.execute("UPDATE offers SET status = ? WHERE id = ?", (status, offer_id))
     conn.commit()
     row = conn.execute("SELECT * FROM offers WHERE id = ?", (offer_id,)).fetchone()
+    conn.close()
+    return row
+
+
+# --- Lot offer helpers (Bargain Box: one combined offer across several cards) ---
+
+def get_cards_by_slugs(slugs):
+    """Fetch cards by a list of slugs - used to validate a lot offer (same
+    seller, real cards, current price) before it's created."""
+    if not slugs:
+        return []
+    conn = get_connection()
+    placeholders = ",".join(["?"] * len(slugs))
+    rows = conn.execute(
+        f"SELECT slug, price_cents, user_id FROM cards WHERE slug IN ({placeholders})",
+        tuple(slugs),
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+def create_lot_offer(card_slugs, buyer_user_id, seller_user_id, total_list_price_cents, amount_cents, message):
+    conn = get_connection()
+    offer_id = str(uuid.uuid4())
+    conn.execute(
+        """
+        INSERT INTO lot_offers
+            (id, card_slugs, buyer_user_id, seller_user_id, total_list_price_cents, amount_cents, message)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            offer_id, json.dumps(card_slugs), buyer_user_id, seller_user_id,
+            total_list_price_cents, amount_cents, message,
+        ),
+    )
+    conn.commit()
+    row = conn.execute("SELECT * FROM lot_offers WHERE id = ?", (offer_id,)).fetchone()
+    conn.close()
+    return row
+
+
+def get_lot_offers_received(seller_user_id):
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT * FROM lot_offers WHERE seller_user_id = ? ORDER BY created_at DESC",
+        (seller_user_id,),
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+def get_lot_offers_sent(buyer_user_id):
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT * FROM lot_offers WHERE buyer_user_id = ? ORDER BY created_at DESC",
+        (buyer_user_id,),
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+def get_lot_offer_by_id(offer_id):
+    conn = get_connection()
+    row = conn.execute("SELECT * FROM lot_offers WHERE id = ?", (offer_id,)).fetchone()
+    conn.close()
+    return row
+
+
+def update_lot_offer_status(offer_id, status):
+    conn = get_connection()
+    conn.execute("UPDATE lot_offers SET status = ? WHERE id = ?", (status, offer_id))
+    conn.commit()
+    row = conn.execute("SELECT * FROM lot_offers WHERE id = ?", (offer_id,)).fetchone()
     conn.close()
     return row
 
