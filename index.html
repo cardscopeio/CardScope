@@ -630,7 +630,7 @@
             <div class="lot-builder-summary" id="lotBuilderSummary"></div>
             <div class="lot-builder-actions">
                 <button class="btn-lot-clear" onclick="clearLotSelection()">Clear</button>
-                <button class="btn-lot-propose" onclick="openLotOfferModal()">Propose Lot Offer</button>
+                <button class="btn-lot-propose" id="lotProposeBtn" onclick="openLotOfferModal()">Propose Lot Offer</button>
             </div>
         </div>
     </div>
@@ -676,6 +676,11 @@
         // prices without re-fetching. Cleared on submit or explicit Clear.
         let lotSelection = new Map();
 
+        // The lot most recently saved via POST /api/lots for the current
+        // selection - an offer is always made against this saved lot's id,
+        // never built directly from the raw card list (see cards-data.js).
+        let currentSavedLot = null;
+
         function toggleLotSelect(cardId, checked) {
             const card = cardsData.find(c => c.id === cardId);
             if (!card) return;
@@ -690,8 +695,16 @@
 
         function clearLotSelection() {
             lotSelection.clear();
+            currentSavedLot = null;
             updateLotBuilderBar();
             renderCards();
+        }
+
+        // Lot totals/min are dollar-string fields on a saved lot (e.g.
+        // "$3,200.00") - reuses the same parsing approach as lotPriceCents
+        // above since the backend formats them the same way.
+        function dollarStringToCents(str) {
+            return Math.round(parseFloat((str || '0').replace(/[^0-9.]/g, '')) * 100);
         }
 
         function lotPriceCents(card) {
@@ -725,13 +738,44 @@
                 `<strong>${cards.length} cards</strong> selected • Combined list price <strong>${formatCents(totalCents)}</strong> • Minimum lot offer (80%) <strong>${formatCents(minCents)}</strong>`;
         }
 
-        function openLotOfferModal() {
+        async function openLotOfferModal() {
             if (!isLoggedIn()) {
                 window.location.href = 'login.html?next=' + encodeURIComponent('index.html?view=bargain');
                 return;
             }
-            const { cards, totalCents, minCents } = lotTotals();
+            const { cards } = lotTotals();
             if (cards.length < 2) return;
+
+            // Save the selection as a real lot FIRST - an offer is always
+            // made against a saved lot's id, never built directly from the
+            // raw card list. This also gives us server-confirmed totals
+            // (current prices, re-validated same-seller) instead of trusting
+            // whatever the client happened to compute from cached cardsData.
+            const proposeBtn = document.getElementById('lotProposeBtn');
+            proposeBtn.disabled = true;
+            proposeBtn.textContent = 'Saving lot...';
+
+            try {
+                currentSavedLot = await saveLot(cards.map(c => c.id));
+            } catch (err) {
+                console.error(err);
+                if (err instanceof AuthRequiredError) {
+                    alert('Your session expired — please sign in again.');
+                    logout();
+                    window.location.href = 'login.html?next=' + encodeURIComponent('index.html?view=bargain');
+                    return;
+                }
+                alert(err.message || 'Could not save this lot. Please try again.');
+                proposeBtn.disabled = false;
+                proposeBtn.textContent = 'Propose Lot Offer';
+                return;
+            }
+
+            proposeBtn.disabled = false;
+            proposeBtn.textContent = 'Propose Lot Offer';
+
+            const totalCents = dollarStringToCents(currentSavedLot.totalListPrice);
+            const minCents = dollarStringToCents(currentSavedLot.minLotOffer);
 
             document.getElementById('lotModalCardList').innerHTML =
                 cards.map(c => `• ${c.player} (${c.year}) — ${c.price}`).join('<br>');
@@ -749,10 +793,16 @@
 
         async function submitLotOffer(event) {
             event.preventDefault();
-            const { cards, minCents } = lotTotals();
             const errorEl = document.getElementById('lotModalError');
             errorEl.style.display = 'none';
 
+            if (!currentSavedLot) {
+                errorEl.textContent = 'This lot wasn\'t saved properly - close this and try again.';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            const minCents = dollarStringToCents(currentSavedLot.minLotOffer);
             const amountRaw = parseFloat(document.getElementById('lotOfferAmount').value);
             if (!amountRaw || Math.round(amountRaw * 100) < minCents) {
                 errorEl.textContent = `Offer must be at least ${formatCents(minCents)} (80% of the combined list price) — sellers won't see anything lower.`;
@@ -765,7 +815,7 @@
             submitBtn.textContent = 'Sending...';
 
             try {
-                await makeLotOffer(cards.map(c => c.id), {
+                await makeLotOffer(currentSavedLot.id, {
                     amount: amountRaw,
                     message: document.getElementById('lotOfferMessage').value,
                 });

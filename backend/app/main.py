@@ -27,8 +27,8 @@ from typing import List, Optional
 from .database import (
     get_connection, init_db, slugify, create_user, get_user_by_email, get_user_by_id,
     create_offer, get_offers_received, get_offers_sent, get_offer_by_id, update_offer_status,
-    get_cards_by_slugs, create_lot_offer, get_lot_offers_received, get_lot_offers_sent,
-    get_lot_offer_by_id, update_lot_offer_status,
+    get_cards_by_slugs, create_lot, get_lot_by_id, create_lot_offer,
+    get_lot_offers_received, get_lot_offers_sent, get_lot_offer_by_id, update_lot_offer_status,
 )
 from .auth import hash_password, verify_password, create_access_token, decode_access_token
 
@@ -384,51 +384,56 @@ def respond_to_offer(offer_id: str, payload: OfferStatusIn, current_user=Depends
     return row_to_offer(row)
 
 
-# --- Lot Offers (Bargain Box: one combined offer across several cards) ---
+# --- Lots + Lot Offers (Bargain Box: one combined offer across several cards) ---
 #
-# A buyer selects 2+ individually-listed cards (must all belong to the same
-# seller) and proposes a single price for the group. The offer amount must
-# be at least LOT_OFFER_MIN_FRACTION (80%) of the combined list price - this
-# is a hard server-side floor, not just a UI hint, so no lowball lot offer
-# can be submitted at all. Beyond that, it's just the normal offer flow:
-# the seller still manually Accepts/Declines in offers.html, same as any
-# single-card offer - this feature only guards against outlandish opening
-# numbers, it doesn't auto-accept anything.
+# Two steps, not one: a buyer first SAVES a selection of 2+ individually-
+# listed cards (must all belong to the same seller) as a standalone `lot`,
+# then makes an offer against that saved lot's id - an offer is never built
+# directly from a raw list of card slugs. This gives the lot a durable
+# identity (so, e.g., a declined offer doesn't force re-picking the same
+# cards to try again) independent of the offer(s) made against it.
+#
+# The offer amount must be at least LOT_OFFER_MIN_FRACTION (80%) of the
+# combined list price - re-checked against CURRENT card prices at offer
+# time (not the lot's save-time snapshot), since a seller could have edited
+# a price in between. This is a hard server-side floor, not just a UI hint -
+# no lowball lot offer can be submitted at all. Beyond that, it's just the
+# normal offer flow: the seller still manually Accepts/Declines in
+# offers.html, same as any single-card offer - this feature only guards
+# against outlandish opening numbers, it doesn't auto-accept anything.
 
-class LotOfferIn(BaseModel):
+def _fmt_usd(dollars: float) -> str:
+    return f"${dollars:,.0f}" if dollars == int(dollars) else f"${dollars:,.2f}"
+
+
+class LotIn(BaseModel):
     cardSlugs: List[str]
-    amount: float = Field(..., description="Proposed price in dollars for the whole lot, not per card")
-    message: Optional[str] = ""
 
     @field_validator("cardSlugs")
     @classmethod
     def at_least_two_distinct_cards(cls, v):
         if len(v) < 2:
-            raise ValueError("A lot offer needs at least 2 cards - use the regular offer flow for a single card")
+            raise ValueError("A lot needs at least 2 cards - use the regular offer flow for a single card")
         if len(set(v)) != len(v):
             raise ValueError("Duplicate cards selected")
         return v
 
 
-def row_to_lot_offer(row) -> dict:
+def row_to_lot(row) -> dict:
     total_dollars = row["total_list_price_cents"] / 100
-    amount_dollars = row["amount_cents"] / 100
     return {
         "id": row["id"],
         "cardSlugs": json.loads(row["card_slugs"]),
         "buyerUserId": row["buyer_user_id"],
         "sellerUserId": row["seller_user_id"],
-        "totalListPrice": f"${total_dollars:,.0f}" if total_dollars == int(total_dollars) else f"${total_dollars:,.2f}",
-        "amount": f"${amount_dollars:,.0f}" if amount_dollars == int(amount_dollars) else f"${amount_dollars:,.2f}",
-        "percentOfList": round((amount_dollars / total_dollars) * 100) if total_dollars else None,
-        "message": row["message"],
-        "status": row["status"],
+        "totalListPrice": _fmt_usd(total_dollars),
+        "minLotOffer": _fmt_usd(total_dollars * LOT_OFFER_MIN_FRACTION),
         "createdAt": row["created_at"],
     }
 
 
-@app.post("/api/lot-offers", status_code=201)
-def make_lot_offer(payload: LotOfferIn, current_user=Depends(get_current_user)):
+@app.post("/api/lots", status_code=201)
+def save_lot(payload: LotIn, current_user=Depends(get_current_user)):
     rows = get_cards_by_slugs(payload.cardSlugs)
 
     found_slugs = {r["slug"] for r in rows}
@@ -438,11 +443,72 @@ def make_lot_offer(payload: LotOfferIn, current_user=Depends(get_current_user)):
 
     seller_ids = {r["user_id"] for r in rows}
     if len(seller_ids) != 1:
-        raise HTTPException(status_code=400, detail="All cards in a lot offer must be listed by the same seller")
+        raise HTTPException(status_code=400, detail="All cards in a lot must be listed by the same seller")
     seller_user_id = seller_ids.pop()
 
     if seller_user_id == current_user["id"]:
-        raise HTTPException(status_code=400, detail="You can't make a lot offer on your own listings")
+        raise HTTPException(status_code=400, detail="You can't build a lot from your own listings")
+
+    total_list_price_cents = sum(r["price_cents"] for r in rows)
+    row = create_lot(payload.cardSlugs, current_user["id"], seller_user_id, total_list_price_cents)
+    return row_to_lot(row)
+
+
+@app.get("/api/lots/{lot_id}")
+def get_lot(lot_id: str, current_user=Depends(get_current_user)):
+    row = get_lot_by_id(lot_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Lot not found")
+    if current_user["id"] not in (row["buyer_user_id"], row["seller_user_id"]):
+        raise HTTPException(status_code=403, detail="You don't have access to this lot")
+    return row_to_lot(row)
+
+
+class LotOfferIn(BaseModel):
+    lotId: str
+    amount: float = Field(..., description="Proposed price in dollars for the whole lot, not per card")
+    message: Optional[str] = ""
+
+
+def row_to_lot_offer(row) -> dict:
+    total_dollars = row["total_list_price_cents"] / 100
+    amount_dollars = row["amount_cents"] / 100
+    return {
+        "id": row["id"],
+        "lotId": row["lot_id"],
+        "cardSlugs": json.loads(row["card_slugs"]),
+        "buyerUserId": row["buyer_user_id"],
+        "sellerUserId": row["seller_user_id"],
+        "totalListPrice": _fmt_usd(total_dollars),
+        "amount": _fmt_usd(amount_dollars),
+        "percentOfList": round((amount_dollars / total_dollars) * 100) if total_dollars else None,
+        "message": row["message"],
+        "status": row["status"],
+        "createdAt": row["created_at"],
+    }
+
+
+@app.post("/api/lot-offers", status_code=201)
+def make_lot_offer(payload: LotOfferIn, current_user=Depends(get_current_user)):
+    lot = get_lot_by_id(payload.lotId)
+    if lot is None:
+        raise HTTPException(status_code=404, detail="Lot not found - save a lot first via POST /api/lots")
+    if lot["buyer_user_id"] != current_user["id"]:
+        raise HTTPException(status_code=403, detail="You can only make offers on lots you've saved")
+
+    # Re-check current prices/ownership rather than trusting the lot's
+    # save-time snapshot - a seller could have edited a price (or the
+    # listing could be gone) since the lot was saved, and the 80% floor
+    # should reflect reality now, not whenever the lot was built.
+    card_slugs = json.loads(lot["card_slugs"])
+    rows = get_cards_by_slugs(card_slugs)
+    found_slugs = {r["slug"] for r in rows}
+    missing = [s for s in card_slugs if s not in found_slugs]
+    if missing:
+        raise HTTPException(status_code=404, detail=f"Card(s) no longer available: {', '.join(missing)}")
+    seller_ids = {r["user_id"] for r in rows}
+    if len(seller_ids) != 1 or seller_ids.pop() != lot["seller_user_id"]:
+        raise HTTPException(status_code=400, detail="This lot's cards have changed sellers - save a new lot")
 
     total_list_price_cents = sum(r["price_cents"] for r in rows)
     amount_cents = int(round(payload.amount * 100))
@@ -452,12 +518,12 @@ def make_lot_offer(payload: LotOfferIn, current_user=Depends(get_current_user)):
             status_code=400,
             detail=(
                 f"Lot offers must be at least {int(LOT_OFFER_MIN_FRACTION * 100)}% of the combined list price "
-                f"(minimum ${min_amount_cents / 100:,.2f} for this selection)"
+                f"(minimum ${min_amount_cents / 100:,.2f} for this lot)"
             ),
         )
 
     row = create_lot_offer(
-        payload.cardSlugs, current_user["id"], seller_user_id,
+        lot["id"], card_slugs, current_user["id"], lot["seller_user_id"],
         total_list_price_cents, amount_cents, payload.message,
     )
     return row_to_lot_offer(row)

@@ -146,17 +146,40 @@ def init_db():
         )
         """
     )
-    # Bargain Box lot offers: a buyer selects multiple individually-listed
-    # cards (must all belong to one seller) and proposes ONE combined price
-    # for the group. card_slugs is a JSON array (not a join table - keeps
-    # this symmetric with the single-card `offers` table above and avoids a
-    # migration-heavy schema for what's still a lightweight feature). The
-    # 80%-of-combined-list-price floor is enforced in main.py at write time,
-    # not here - this table just stores the snapshot once validated.
+    # Bargain Box lots: a buyer checks off multiple individually-listed
+    # cards (must all belong to one seller) and SAVES that selection as a
+    # standalone lot before making an offer on it - this is the persisted
+    # object an offer is made against, rather than an offer just carrying a
+    # raw list of card slugs. card_slugs is a JSON array (not a join table -
+    # keeps this symmetric with the single-card `offers` table above and
+    # avoids a migration-heavy schema for what's still a lightweight
+    # feature). total_list_price_cents here is a snapshot at save time for
+    # display; the actual 80% floor on an offer is re-checked against live
+    # card prices at offer time (see make_lot_offer in main.py), in case a
+    # seller edited a price after the lot was saved.
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS lots (
+            id TEXT PRIMARY KEY,
+            card_slugs TEXT NOT NULL,
+            buyer_user_id TEXT NOT NULL,
+            seller_user_id TEXT NOT NULL,
+            total_list_price_cents INTEGER NOT NULL,
+            created_at TEXT DEFAULT (to_char(now() at time zone 'utc', 'YYYY-MM-DD HH24:MI:SS'))
+        )
+        """
+    )
+    # Bargain Box lot offers: one combined price proposed on a *saved* lot
+    # (see `lots` above). card_slugs/total_list_price_cents are copied onto
+    # the offer at creation time so this table stays self-contained for
+    # display (offers.html doesn't need to join back to `lots` to show
+    # what's in it) - lot_id is kept alongside purely so a buyer's saved lot
+    # and the offer(s) made against it can be traced back to each other.
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS lot_offers (
             id TEXT PRIMARY KEY,
+            lot_id TEXT,
             card_slugs TEXT NOT NULL,
             buyer_user_id TEXT NOT NULL,
             seller_user_id TEXT NOT NULL,
@@ -168,6 +191,11 @@ def init_db():
         )
         """
     )
+    # Migration for the lot_offers table as it existed before lots were a
+    # separate saved object - already-deployed instances need this column
+    # added explicitly (CREATE TABLE IF NOT EXISTS above is a no-op against
+    # an existing table). Safe to run on every startup.
+    conn.execute("ALTER TABLE lot_offers ADD COLUMN IF NOT EXISTS lot_id TEXT")
     conn.commit()
 
     # Seed with the original 16 demo cards on first run only, so re-deploys
@@ -281,17 +309,40 @@ def get_cards_by_slugs(slugs):
     return rows
 
 
-def create_lot_offer(card_slugs, buyer_user_id, seller_user_id, total_list_price_cents, amount_cents, message):
+def create_lot(card_slugs, buyer_user_id, seller_user_id, total_list_price_cents):
+    conn = get_connection()
+    lot_id = str(uuid.uuid4())
+    conn.execute(
+        """
+        INSERT INTO lots (id, card_slugs, buyer_user_id, seller_user_id, total_list_price_cents)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (lot_id, json.dumps(card_slugs), buyer_user_id, seller_user_id, total_list_price_cents),
+    )
+    conn.commit()
+    row = conn.execute("SELECT * FROM lots WHERE id = ?", (lot_id,)).fetchone()
+    conn.close()
+    return row
+
+
+def get_lot_by_id(lot_id):
+    conn = get_connection()
+    row = conn.execute("SELECT * FROM lots WHERE id = ?", (lot_id,)).fetchone()
+    conn.close()
+    return row
+
+
+def create_lot_offer(lot_id, card_slugs, buyer_user_id, seller_user_id, total_list_price_cents, amount_cents, message):
     conn = get_connection()
     offer_id = str(uuid.uuid4())
     conn.execute(
         """
         INSERT INTO lot_offers
-            (id, card_slugs, buyer_user_id, seller_user_id, total_list_price_cents, amount_cents, message)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+            (id, lot_id, card_slugs, buyer_user_id, seller_user_id, total_list_price_cents, amount_cents, message)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
-            offer_id, json.dumps(card_slugs), buyer_user_id, seller_user_id,
+            offer_id, lot_id, json.dumps(card_slugs), buyer_user_id, seller_user_id,
             total_list_price_cents, amount_cents, message,
         ),
     )
