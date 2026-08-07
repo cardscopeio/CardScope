@@ -3,11 +3,16 @@
  *
  * Every page's own <style> block references these variables instead of
  * hardcoding colors, so switching data-theme on <html> re-themes the whole
- * page instantly. Brand accent colors (#667eea/#764ba2 gradient) and status
- * colors (success/danger/warning) deliberately stay OUTSIDE this variable
- * system - they're translucent brand-color tints that read correctly on
- * both a dark and a light background as-is, so only the base
- * background/text/surface/border tokens actually need to flip.
+ * page instantly. Brand accent colors (#667eea/#764ba2 gradient) and most
+ * status colors (success green, danger red) deliberately stay OUTSIDE this
+ * variable system - they're translucent brand-color tints that read
+ * correctly on both a dark and a light background as-is.
+ *
+ * Exception: amber/yellow (--amber-text, --amber-text-alt, used for the
+ * Bargain Box accent and "pending" status text) genuinely fails contrast on
+ * a white background - #f59e0b and #ffc107 read fine on the dark theme but
+ * are hard to read on white, so these get a real light-mode override
+ * (a darker amber) instead of staying a static color like the others.
  *
  * Applied via a tiny inline script in each page's <head> (reads
  * localStorage before first paint, so there's no flash of the wrong
@@ -20,6 +25,9 @@
     --bg-2: #1a2332;
     --text-1: #e1e8ed;
     --text-2: #8899a6;
+    --text-3: #c9d1d9;
+    --amber-text: #f59e0b;
+    --amber-text-alt: #ffc107;
     --header-surface: rgba(15, 20, 25, 0.95);
     --tint-1: rgba(255, 255, 255, 0.03);
     --tint-2: rgba(255, 255, 255, 0.05);
@@ -33,6 +41,9 @@ html[data-theme="light"] {
     --bg-2: #f2f4f9;
     --text-1: #1a2332;
     --text-2: #5b6572;
+    --text-3: #333e4d;
+    --amber-text: #92400e;
+    --amber-text-alt: #92400e;
     --header-surface: rgba(255, 255, 255, 0.92);
     --tint-1: rgba(15, 20, 30, 0.025);
     --tint-2: rgba(15, 20, 30, 0.045);
