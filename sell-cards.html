@@ -6,6 +6,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Sell Your Cards - CardScope.io</title>
+    <script>(function(){var t=localStorage.getItem('cardscope_theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+    <link rel="stylesheet" href="theme.css">
     <style>
         * {
             margin: 0;
@@ -15,15 +17,15 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #0f1419 0%, #1a2332 100%);
-            color: #e1e8ed;
+            background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 100%);
+            color: var(--text-1);
             min-height: 100vh;
         }
 
         header {
-            background: rgba(15, 20, 25, 0.95);
+            background: var(--header-surface);
             backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid var(--tint-4);
             padding: 1.5rem 2rem;
             position: sticky;
             top: 0;
@@ -49,7 +51,7 @@
 
         .logo-subtitle {
             font-size: 0.75rem;
-            color: #8899a6;
+            color: var(--text-2);
             margin-top: -0.25rem;
         }
 
@@ -60,7 +62,7 @@
         }
 
         nav a {
-            color: #8899a6;
+            color: var(--text-2);
             text-decoration: none;
             font-weight: 500;
             transition: color 0.2s;
@@ -94,13 +96,13 @@
 
         .page-subtitle {
             font-size: 1.1rem;
-            color: #8899a6;
+            color: var(--text-2);
             line-height: 1.6;
         }
 
         .sell-form {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--tint-1);
+            border: 1px solid var(--tint-4);
             border-radius: 20px;
             padding: 3rem;
         }
@@ -108,7 +110,7 @@
         .section-title {
             font-size: 1.5rem;
             font-weight: 700;
-            color: #e1e8ed;
+            color: var(--text-1);
             margin-bottom: 1.5rem;
             padding-bottom: 0.75rem;
             border-bottom: 2px solid rgba(102, 126, 234, 0.3);
@@ -132,7 +134,7 @@
         .form-group label {
             display: block;
             margin-bottom: 0.5rem;
-            color: #e1e8ed;
+            color: var(--text-1);
             font-weight: 600;
             font-size: 0.9rem;
         }
@@ -146,10 +148,10 @@
         .form-group textarea {
             width: 100%;
             padding: 1rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--tint-2);
+            border: 1px solid var(--tint-4);
             border-radius: 10px;
-            color: #e1e8ed;
+            color: var(--text-1);
             font-size: 1rem;
             transition: all 0.3s;
             font-family: inherit;
@@ -160,7 +162,7 @@
         .form-group textarea:focus {
             outline: none;
             border-color: #667eea;
-            background: rgba(255, 255, 255, 0.08);
+            background: var(--tint-3);
         }
 
         .form-group textarea {
@@ -174,7 +176,7 @@
 
         .input-hint {
             font-size: 0.85rem;
-            color: #8899a6;
+            color: var(--text-2);
             margin-top: 0.5rem;
         }
 
@@ -210,13 +212,13 @@
 
         .upload-text {
             font-size: 1.1rem;
-            color: #e1e8ed;
+            color: var(--text-1);
             margin-bottom: 0.5rem;
         }
 
         .upload-hint {
             font-size: 0.9rem;
-            color: #8899a6;
+            color: var(--text-2);
         }
 
         #imageInput {
@@ -235,8 +237,8 @@
             aspect-ratio: 1;
             border-radius: 10px;
             overflow: hidden;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--tint-2);
+            border: 1px solid var(--tint-4);
         }
 
         .image-preview-item img {
@@ -290,7 +292,7 @@
             left: 1rem;
             top: 50%;
             transform: translateY(-50%);
-            color: #8899a6;
+            color: var(--text-2);
             font-size: 1.1rem;
             font-weight: 600;
         }
@@ -309,10 +311,10 @@
         .toggle-btn {
             flex: 1;
             padding: 0.75rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--tint-2);
+            border: 1px solid var(--tint-4);
             border-radius: 8px;
-            color: #8899a6;
+            color: var(--text-2);
             cursor: pointer;
             transition: all 0.3s;
             font-weight: 600;
@@ -328,7 +330,7 @@
         .submit-section {
             margin-top: 3rem;
             padding-top: 2rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid var(--tint-4);
         }
 
         .terms-checkbox {
@@ -385,7 +387,7 @@
         .btn-draft {
             flex: 1;
             padding: 1.25rem 2rem;
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--tint-2);
             border: 2px solid rgba(102, 126, 234, 0.4);
             border-radius: 12px;
             color: #667eea;
@@ -520,6 +522,7 @@
                 <a href="sell-cards.html" class="active">Sell Cards</a>
                 <a href="#about">About</a>
                 <a href="contact.html">Contact</a>
+                <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle light/dark theme">☀️</button>
                 <span id="authNavSlot"></span>
             </nav>
         </div>
@@ -743,6 +746,7 @@
     <script src="cards-data.js"></script>
     <script>
         renderAuthNav();
+        updateThemeToggleButtons();
 
         // Selling requires an account so listings can be tied to their
         // owner and managed later. Bounce to sign-in, then back here.

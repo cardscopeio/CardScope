@@ -6,6 +6,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Sign In - CardScope.io</title>
+    <script>(function(){var t=localStorage.getItem('cardscope_theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+    <link rel="stylesheet" href="theme.css">
     <link rel="stylesheet" href="card-flip.css">
     <style>
         * {
@@ -16,15 +18,15 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #0f1419 0%, #1a2332 100%);
-            color: #e1e8ed;
+            background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 100%);
+            color: var(--text-1);
             min-height: 100vh;
         }
 
         header {
-            background: rgba(15, 20, 25, 0.95);
+            background: var(--header-surface);
             backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid var(--tint-4);
             padding: 1.5rem 2rem;
             position: sticky;
             top: 0;
@@ -50,7 +52,7 @@
 
         .logo-subtitle {
             font-size: 0.75rem;
-            color: #8899a6;
+            color: var(--text-2);
             margin-top: -0.25rem;
         }
 
@@ -61,7 +63,7 @@
         }
 
         nav a {
-            color: #8899a6;
+            color: var(--text-2);
             text-decoration: none;
             font-weight: 500;
             transition: color 0.2s;
@@ -95,7 +97,7 @@
 
         .page-subtitle {
             font-size: 1rem;
-            color: #8899a6;
+            color: var(--text-2);
         }
 
         .auth-tabs {
@@ -107,10 +109,10 @@
         .auth-tab {
             flex: 1;
             padding: 0.9rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--tint-2);
+            border: 1px solid var(--tint-4);
             border-radius: 10px;
-            color: #8899a6;
+            color: var(--text-2);
             cursor: pointer;
             font-weight: 600;
             transition: all 0.3s;
@@ -124,8 +126,8 @@
         }
 
         .auth-form-container {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--tint-1);
+            border: 1px solid var(--tint-4);
             border-radius: 20px;
             padding: 2.5rem;
         }
@@ -145,7 +147,7 @@
         .form-group label {
             display: block;
             margin-bottom: 0.5rem;
-            color: #e1e8ed;
+            color: var(--text-1);
             font-weight: 600;
             font-size: 0.9rem;
         }
@@ -153,10 +155,10 @@
         .form-group input {
             width: 100%;
             padding: 1rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--tint-2);
+            border: 1px solid var(--tint-4);
             border-radius: 10px;
-            color: #e1e8ed;
+            color: var(--text-1);
             font-size: 1rem;
             transition: all 0.3s;
             font-family: inherit;
@@ -165,12 +167,12 @@
         .form-group input:focus {
             outline: none;
             border-color: #667eea;
-            background: rgba(255, 255, 255, 0.08);
+            background: var(--tint-3);
         }
 
         .input-hint {
             font-size: 0.85rem;
-            color: #8899a6;
+            color: var(--text-2);
             margin-top: 0.5rem;
         }
 
@@ -246,6 +248,7 @@
                 <a href="sell-cards.html">Sell Cards</a>
                 <a href="#about">About</a>
                 <a href="contact.html">Contact</a>
+                <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle light/dark theme">☀️</button>
                 <span id="authNavSlot"></span>
             </nav>
         </div>
@@ -297,6 +300,7 @@
     <script src="cards-data.js"></script>
     <script>
         renderAuthNav();
+        updateThemeToggleButtons();
 
         // If already logged in, no reason to be on this page
         if (isLoggedIn()) {

@@ -9,6 +9,35 @@
 //
 // Requires config.js (defines API_BASE_URL) to be loaded first.
 
+// --- Theme (dark default / light, user preference) ---
+// The actual instant-apply-before-paint logic is a tiny inline script in
+// each page's <head> (has to run before body renders, so it can't wait for
+// this file to load) - these are just the toggle button's click handler and
+// the shared "what theme is active" helpers, used across every page.
+const THEME_STORAGE_KEY = "cardscope_theme";
+
+function getTheme() {
+    return localStorage.getItem(THEME_STORAGE_KEY) || "dark";
+}
+
+function setTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+    updateThemeToggleButtons();
+}
+
+function toggleTheme() {
+    setTheme(getTheme() === "dark" ? "light" : "dark");
+}
+
+function updateThemeToggleButtons() {
+    const isDark = getTheme() === "dark";
+    document.querySelectorAll(".theme-toggle-btn").forEach((btn) => {
+        btn.textContent = isDark ? "☀️" : "🌙";
+        btn.title = isDark ? "Switch to light mode" : "Switch to dark mode";
+    });
+}
+
 async function fetchAllCards() {
     const res = await fetch(`${API_BASE_URL}/api/cards`);
     if (!res.ok) throw new Error(`Failed to load cards (${res.status})`);

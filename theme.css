@@ -1,0 +1,58 @@
+/*
+ * CardScope.io theme system - dark (default) + light, as a user preference.
+ *
+ * Every page's own <style> block references these variables instead of
+ * hardcoding colors, so switching data-theme on <html> re-themes the whole
+ * page instantly. Brand accent colors (#667eea/#764ba2 gradient) and status
+ * colors (success/danger/warning) deliberately stay OUTSIDE this variable
+ * system - they're translucent brand-color tints that read correctly on
+ * both a dark and a light background as-is, so only the base
+ * background/text/surface/border tokens actually need to flip.
+ *
+ * Applied via a tiny inline script in each page's <head> (reads
+ * localStorage before first paint, so there's no flash of the wrong
+ * theme) + toggleTheme()/setTheme() in cards-data.js for the actual
+ * toggle button.
+ */
+
+:root {
+    --bg-1: #0f1419;
+    --bg-2: #1a2332;
+    --text-1: #e1e8ed;
+    --text-2: #8899a6;
+    --header-surface: rgba(15, 20, 25, 0.95);
+    --tint-1: rgba(255, 255, 255, 0.03);
+    --tint-2: rgba(255, 255, 255, 0.05);
+    --tint-3: rgba(255, 255, 255, 0.08);
+    --tint-4: rgba(255, 255, 255, 0.1);
+    --panel-bg: #1a2332;
+}
+
+html[data-theme="light"] {
+    --bg-1: #ffffff;
+    --bg-2: #f2f4f9;
+    --text-1: #1a2332;
+    --text-2: #5b6572;
+    --header-surface: rgba(255, 255, 255, 0.92);
+    --tint-1: rgba(15, 20, 30, 0.025);
+    --tint-2: rgba(15, 20, 30, 0.045);
+    --tint-3: rgba(15, 20, 30, 0.065);
+    --tint-4: rgba(15, 20, 30, 0.1);
+    --panel-bg: #ffffff;
+}
+
+.theme-toggle-btn {
+    background: var(--tint-2);
+    border: 1px solid var(--tint-4);
+    border-radius: 8px;
+    color: var(--text-1);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0.5rem 0.75rem;
+    line-height: 1;
+    transition: all 0.2s;
+}
+
+.theme-toggle-btn:hover {
+    background: var(--tint-3);
+}

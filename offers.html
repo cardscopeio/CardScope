@@ -6,6 +6,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>My Offers - CardScope.io</title>
+    <script>(function(){var t=localStorage.getItem('cardscope_theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+    <link rel="stylesheet" href="theme.css">
     <style>
         * {
             margin: 0;
@@ -15,8 +17,8 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #0f1419 0%, #1a2332 100%);
-            color: #e1e8ed;
+            background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 100%);
+            color: var(--text-1);
             min-height: 100vh;
             padding: 2rem;
         }
@@ -36,7 +38,7 @@
         }
 
         .subtitle {
-            color: #8899a6;
+            color: var(--text-2);
             margin-bottom: 2rem;
         }
 
@@ -64,10 +66,10 @@
         .tab {
             flex: 1;
             padding: 0.9rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--tint-2);
+            border: 1px solid var(--tint-4);
             border-radius: 10px;
-            color: #8899a6;
+            color: var(--text-2);
             cursor: pointer;
             font-weight: 600;
             transition: all 0.3s;
@@ -81,15 +83,15 @@
         }
 
         .offers-list {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--tint-1);
+            border: 1px solid var(--tint-4);
             border-radius: 12px;
             overflow: hidden;
         }
 
         .offer-item {
             padding: 1.5rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid var(--tint-2);
         }
 
         .offer-item:last-child {
@@ -137,7 +139,7 @@
         }
 
         .offer-date {
-            color: #8899a6;
+            color: var(--text-2);
             font-size: 0.85rem;
         }
 
@@ -204,7 +206,7 @@
         .empty-state {
             text-align: center;
             padding: 4rem 2rem;
-            color: #8899a6;
+            color: var(--text-2);
         }
 
         .empty-state-icon {
@@ -226,13 +228,13 @@
         }
 
         .lot-card-list {
-            color: #8899a6;
+            color: var(--text-2);
             font-size: 0.85rem;
             margin-bottom: 0.5rem;
         }
 
         .lot-price-detail {
-            color: #8899a6;
+            color: var(--text-2);
             font-size: 0.8rem;
             margin-top: 0.2rem;
         }
@@ -255,6 +257,7 @@
 <body>
     <div class="container">
         <a href="index.html" class="back-link">← Back to Homepage</a>
+        <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle light/dark theme" style="float: right; margin-top: 0.5rem;">☀️</button>
 
         <h1>My Offers</h1>
         <p class="subtitle">Offers and messages on your listings, plus offers you've sent — including Bargain Box lot offers</p>
@@ -278,6 +281,7 @@
         if (!isLoggedIn()) {
             window.location.href = 'login.html?next=offers.html';
         }
+        updateThemeToggleButtons();
 
         let currentTab = 'received';
         let receivedOffers = [];

@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title id="pageTitle">Card Profile - CardScope.io</title>
+    <script>(function(){var t=localStorage.getItem('cardscope_theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+    <link rel="stylesheet" href="theme.css">
     <link rel="stylesheet" href="card-flip.css">
     <style>
         * {
@@ -14,8 +16,8 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #0f1419 0%, #1a2332 100%);
-            color: #e1e8ed;
+            background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 100%);
+            color: var(--text-1);
             min-height: 100vh;
             position: relative;
             overflow-x: hidden;
@@ -33,9 +35,9 @@
         }
 
         header {
-            background: rgba(15, 20, 25, 0.95);
+            background: var(--header-surface);
             backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid var(--tint-4);
             padding: 1.5rem 2rem;
             position: sticky;
             top: 0;
@@ -61,7 +63,7 @@
 
         .logo-subtitle {
             font-size: 0.75rem;
-            color: #8899a6;
+            color: var(--text-2);
             margin-top: -0.25rem;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
@@ -73,7 +75,7 @@
         }
 
         nav a {
-            color: #8899a6;
+            color: var(--text-2);
             text-decoration: none;
             font-weight: 500;
             transition: color 0.2s;
@@ -180,7 +182,7 @@
         }
 
         .detail-item {
-            background: rgba(255, 255, 255, 0.02);
+            background: var(--tint-1);
             border: 1px solid rgba(102, 126, 234, 0.2);
             border-radius: 12px;
             padding: 1.5rem;
@@ -188,7 +190,7 @@
 
         .detail-label {
             font-size: 0.85rem;
-            color: #8899a6;
+            color: var(--text-2);
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 0.5rem;
@@ -210,7 +212,7 @@
 
         .price-label {
             font-size: 0.85rem;
-            color: #8899a6;
+            color: var(--text-2);
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 0.5rem;
@@ -252,7 +254,7 @@
             display: flex;
             justify-content: space-between;
             padding: 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid var(--tint-2);
         }
 
         .spec-row:last-child {
@@ -261,7 +263,7 @@
 
         .spec-key {
             font-weight: 600;
-            color: #8899a6;
+            color: var(--text-2);
         }
 
         .spec-value {
@@ -297,7 +299,7 @@
         .btn-secondary {
             flex: 1;
             padding: 1.25rem 2rem;
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--tint-2);
             border: 2px solid rgba(102, 126, 234, 0.4);
             border-radius: 12px;
             color: #667eea;
@@ -315,7 +317,7 @@
         .offer-form-container {
             margin-top: 1.5rem;
             padding: 1.5rem;
-            background: rgba(255, 255, 255, 0.02);
+            background: var(--tint-1);
             border: 1px solid rgba(102, 126, 234, 0.2);
             border-radius: 12px;
         }
@@ -329,17 +331,17 @@
             margin-bottom: 0.5rem;
             font-weight: 600;
             font-size: 0.9rem;
-            color: #e1e8ed;
+            color: var(--text-1);
         }
 
         .offer-form-container input,
         .offer-form-container textarea {
             width: 100%;
             padding: 0.85rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--tint-2);
+            border: 1px solid var(--tint-4);
             border-radius: 10px;
-            color: #e1e8ed;
+            color: var(--text-1);
             font-size: 1rem;
             font-family: inherit;
         }
@@ -461,6 +463,7 @@
                 <a href="sell-cards.html">Sell Cards</a>
                 <a href="#about">About</a>
                 <a href="contact.html">Contact</a>
+                <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle light/dark theme">☀️</button>
                 <span id="authNavSlot"></span>
             </nav>
         </div>
@@ -710,6 +713,7 @@
 
         window.addEventListener('DOMContentLoaded', loadCard);
         renderAuthNav();
+        updateThemeToggleButtons();
     </script>
 </body>
 </html>
