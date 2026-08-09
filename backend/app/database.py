@@ -226,6 +226,18 @@ def init_db():
     conn.execute("DELETE FROM cards WHERE is_user_submitted = 0")
     conn.commit()
 
+    # One-time cleanup (2026-08-08): removing the original JJ Wetherholt
+    # listing at Thor's request to start inventory fresh - it was listed
+    # under an account whose login email couldn't be confirmed (the
+    # password-reset flow revealed no account exists under the expected
+    # email), so it couldn't be removed through the normal authenticated
+    # delete flow. Also clears any offers made on it so nothing orphaned
+    # references a deleted card. Safe to leave here permanently - becomes a
+    # no-op once the row is gone. Remove this block once confirmed cleared.
+    conn.execute("DELETE FROM offers WHERE card_slug = 'jj-wetherholt'")
+    conn.execute("DELETE FROM cards WHERE slug = 'jj-wetherholt'")
+    conn.commit()
+
     conn.close()
 
 

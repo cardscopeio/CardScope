@@ -327,10 +327,19 @@ function renderAuthNav() {
     const slot = document.getElementById("authNavSlot");
     if (!slot) return;
     if (isLoggedIn()) {
+        // Two-row layout: links + logout icon on top, the account email on
+        // its own smaller line underneath - crammed onto one line with
+        // "Log Out (email@...)" as text was pushing the header too wide.
         slot.innerHTML = `
-            <a href="manage-cards.html">My Cards</a>
-            <a href="offers.html">My Offers</a>
-            <a href="#" onclick="logout(); window.location.href='index.html'; return false;">Log Out (${getAuthEmail()})</a>
+            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.15rem;">
+                <div style="display: flex; align-items: center; gap: 1.25rem;">
+                    <a href="manage-cards.html">My Cards</a>
+                    <a href="offers.html">My Offers</a>
+                    <a href="#" onclick="logout(); window.location.href='index.html'; return false;"
+                       title="Log Out" style="font-size: 1.15rem; line-height: 1;">🚪</a>
+                </div>
+                <span style="font-size: 0.7rem; color: var(--text-2);">${getAuthEmail()}</span>
+            </div>
         `;
     } else {
         slot.innerHTML = `<a href="login.html">Sign In / Sign Up</a>`;
