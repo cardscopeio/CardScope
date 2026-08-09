@@ -20,12 +20,63 @@
             background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 100%);
             color: var(--text-1);
             min-height: 100vh;
-            padding: 2rem;
+        }
+
+        header {
+            background: var(--header-surface);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--tint-4);
+            padding: 1.5rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-2);
+            margin-top: -0.25rem;
+        }
+
+        nav {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        nav a {
+            color: var(--text-2);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        nav a:hover,
+        nav a.active {
+            color: #667eea;
         }
 
         .container {
             max-width: 1000px;
             margin: 0 auto;
+            padding: 2rem;
         }
 
         h1 {
@@ -40,21 +91,6 @@
         .subtitle {
             color: var(--text-2);
             margin-bottom: 2rem;
-        }
-
-        .back-link {
-            display: inline-block;
-            color: #667eea;
-            text-decoration: none;
-            margin-bottom: 2rem;
-            padding: 0.75rem 1.25rem;
-            background: rgba(102, 126, 234, 0.1);
-            border-radius: 8px;
-            transition: all 0.3s;
-        }
-
-        .back-link:hover {
-            background: rgba(102, 126, 234, 0.2);
         }
 
         .tabs {
@@ -240,7 +276,30 @@
         }
 
         @media (max-width: 768px) {
-            body {
+            .container {
+                padding: 1rem;
+            }
+
+            nav {
+                gap: 1rem;
+                flex-wrap: wrap;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+
+            nav a {
+                font-size: 0.9rem;
+            }
+
+            .logo {
+                font-size: 1.5rem;
+            }
+
+            header {
                 padding: 1rem;
             }
 
@@ -255,10 +314,26 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <a href="index.html" class="back-link">← Back to Homepage</a>
-        <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle light/dark theme" style="float: right; margin-top: 0.5rem;">☀️</button>
+    <header>
+        <div class="header-content">
+            <a href="index.html" style="text-decoration: none;">
+                <div>
+                    <div class="logo">CardScope.io</div>
+                    <div class="logo-subtitle">Premium Baseball Card Marketplace</div>
+                </div>
+            </a>
+            <nav>
+                <a href="index.html">Browse</a>
+                <a href="index.html?view=bargain">Bargain Box</a>
+                <a href="sell-cards.html">Sell Cards</a>
+                <a href="#about">About</a>
+                <a href="contact.html">Contact</a>
+                <span id="authNavSlot"></span>
+            </nav>
+        </div>
+    </header>
 
+    <div class="container">
         <h1>My Offers</h1>
         <p class="subtitle">Offers and messages on your listings, plus offers you've sent — including Bargain Box lot offers</p>
 
@@ -281,6 +356,7 @@
         if (!isLoggedIn()) {
             window.location.href = 'login.html?next=offers.html';
         }
+        renderAuthNav();
         updateThemeToggleButtons();
 
         let currentTab = 'received';
