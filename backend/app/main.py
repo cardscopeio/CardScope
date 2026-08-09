@@ -323,9 +323,15 @@ class CardIn(BaseModel):
 
 @app.get("/api/cards")
 def list_cards():
+    # Sold cards (see update_card_status above) drop out of the public
+    # Browse list but keep existing - GET /api/cards/{slug} below is
+    # deliberately NOT filtered, so a direct/shared link to a sold card
+    # still resolves (card.html shows a SOLD badge instead of 404ing), and
+    # list_my_cards below shows every status so a seller can still see and
+    # un-mark their own sold listings.
     conn = get_connection()
     rows = conn.execute(
-        "SELECT * FROM cards ORDER BY is_user_submitted DESC, date_added DESC"
+        "SELECT * FROM cards WHERE status = 'listed' ORDER BY is_user_submitted DESC, date_added DESC"
     ).fetchall()
     conn.close()
     return [row_to_card(r) for r in rows]
@@ -428,6 +434,40 @@ def update_card(slug: str, card: CardIn, current_user=Depends(get_current_user))
     row = conn.execute("SELECT * FROM cards WHERE slug = ?", (slug,)).fetchone()
     conn.close()
     return row_to_card(row)
+
+
+class CardStatusIn(BaseModel):
+    status: str  # "listed" or "sold"
+
+    @field_validator("status")
+    @classmethod
+    def status_is_valid(cls, v):
+        if v not in ("listed", "sold"):
+            raise ValueError('status must be "listed" or "sold"')
+        return v
+
+
+@app.patch("/api/cards/{slug}/status")
+def update_card_status(slug: str, payload: CardStatusIn, current_user=Depends(get_current_user)):
+    """Marking a card sold doesn't delete it (unlike delete_card below) -
+    it just pulls it out of the public Browse list (see list_cards' WHERE
+    clause) while leaving the listing, its offers, and its direct URL
+    intact. Since PayPal payment happens entirely off-platform (see the
+    PayPal buy/pay buttons - CardScope never sees the payment), there's no
+    automatic way to know a sale closed; this is the seller telling us."""
+    conn = get_connection()
+    row = conn.execute("SELECT slug, user_id FROM cards WHERE slug = ?", (slug,)).fetchone()
+    if row is None:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Card not found")
+    if row["user_id"] != current_user["id"]:
+        conn.close()
+        raise HTTPException(status_code=403, detail="You can only update cards you listed")
+    conn.execute("UPDATE cards SET status = ? WHERE slug = ?", (payload.status, slug))
+    conn.commit()
+    updated = conn.execute("SELECT * FROM cards WHERE slug = ?", (slug,)).fetchone()
+    conn.close()
+    return row_to_card(updated)
 
 
 @app.delete("/api/cards/{slug}", status_code=204)

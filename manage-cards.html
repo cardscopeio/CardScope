@@ -249,6 +249,21 @@
             font-weight: 700;
             color: var(--text-1);
             margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .sold-badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
         }
 
         .card-details {
@@ -292,6 +307,36 @@
 
         .btn-delete:hover {
             background: rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-sold {
+            padding: 0.5rem 1rem;
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid rgba(34, 197, 94, 0.4);
+            border-radius: 6px;
+            color: #22c55e;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 0.5rem;
+        }
+
+        .btn-sold:hover {
+            background: rgba(34, 197, 94, 0.3);
+        }
+
+        .btn-unsold {
+            padding: 0.5rem 1rem;
+            background: var(--tint-2);
+            border: 1px solid var(--tint-4);
+            border-radius: 6px;
+            color: var(--text-2);
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 0.5rem;
+        }
+
+        .btn-unsold:hover {
+            background: var(--tint-3);
         }
 
         .empty-state {
@@ -554,14 +599,37 @@
             cardsList.innerHTML = myCards.map((card) => `
                 <div class="card-item">
                     <div class="card-info">
-                        <div class="card-player">${card.player}</div>
+                        <div class="card-player">${card.player}${card.status === 'sold' ? '<span class="sold-badge">Sold</span>' : ''}</div>
                         <div class="card-details">${card.year} ${card.brand} • ${card.type} • ${card.condition || 'Ungraded'}</div>
                     </div>
                     <div class="card-price">${card.price}</div>
                     <a href="sell-cards.html?edit=${card.id}" class="btn-edit">Edit</a>
+                    ${card.status === 'sold'
+                        ? `<button class="btn-unsold" onclick="toggleSoldStatus('${card.id}', 'listed')">Mark as Active</button>`
+                        : `<button class="btn-sold" onclick="toggleSoldStatus('${card.id}', 'sold')">Mark as Sold</button>`
+                    }
                     <button class="btn-delete" onclick="deleteCard('${card.id}')">Delete</button>
                 </div>
             `).join('');
+        }
+
+        async function toggleSoldStatus(id, status) {
+            if (status === 'sold' && !confirm('Mark this card as sold? It will be removed from the public Browse page (its link still works, and you can switch it back to Active any time).')) {
+                return;
+            }
+            try {
+                await updateCardStatus(id, status);
+            } catch (err) {
+                console.error(err);
+                if (err instanceof AuthRequiredError) {
+                    logout();
+                    window.location.href = 'login.html?next=manage-cards.html';
+                    return;
+                }
+                alert('Could not update this listing — is the CardScope backend running?');
+                return;
+            }
+            loadCards();
         }
 
         async function deleteCard(id) {

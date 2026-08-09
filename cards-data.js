@@ -90,6 +90,18 @@ async function updateCard(id, cardData) {
     return res.json();
 }
 
+async function updateCardStatus(id, status) {
+    const res = await fetch(`${API_BASE_URL}/api/cards/${encodeURIComponent(id)}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeader() },
+        body: JSON.stringify({ status }),
+    });
+    if (res.status === 401) throw new AuthRequiredError();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || `Failed to update card status (${res.status})`);
+    return data;
+}
+
 async function deleteCardById(id) {
     const res = await fetch(`${API_BASE_URL}/api/cards/${encodeURIComponent(id)}`, {
         method: "DELETE",

@@ -450,6 +450,22 @@
             margin-left: 0.75rem;
         }
 
+        .sold-badge-detail {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(34, 197, 94, 0.15);
+            border: 2px solid rgba(34, 197, 94, 0.4);
+            border-radius: 8px;
+            color: #22c55e;
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 0.75rem;
+        }
+
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
@@ -514,6 +530,7 @@
             <div class="card-info">
                 <h1 class="player-name" id="playerName">Loading...</h1>
                 <div class="card-year-badge" id="yearBadge">2011</div>
+                <span id="soldBadgeDetail"></span>
                 <span id="lotBadgeDetail"></span>
                 <div id="conditionBadge"></div>
 
@@ -647,6 +664,15 @@
                 document.getElementById('ctaButtons').style.display = 'none';
                 document.getElementById('ownListingNotice').style.display = 'block';
                 document.getElementById('editListingLink').href = `sell-cards.html?edit=${card.id}`;
+                if (card.status === 'sold') {
+                    document.getElementById('soldBadgeDetail').innerHTML = `<span class="sold-badge-detail">✓ Sold</span>`;
+                }
+            } else if (card.status === 'sold') {
+                // Sold cards keep a working link (see list_cards' filter in
+                // main.py - only the public Browse list excludes them) but
+                // buying/offering no longer makes sense once it's gone.
+                document.getElementById('soldBadgeDetail').innerHTML = `<span class="sold-badge-detail">✓ Sold</span>`;
+                document.getElementById('ctaButtons').style.display = 'none';
             } else {
                 loadPaypalBuySection(card);
             }
