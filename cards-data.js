@@ -344,13 +344,15 @@ function renderAuthNav() {
         // (that extra height was what pushed this row higher than the
         // other nav items, since the whole block was being vertically
         // centered against its own taller, two-row content).
-        // "My Cards" and "My Offers" are hand-drawn inline SVGs (no image
-        // generation tool available) instead of text links - a small card
-        // outline for My Cards, a price-tag badge with "OFFER" printed on
-        // it for My Offers. Both use stroke/fill="currentColor" so they
-        // inherit the link's color automatically, including on hover
-        // (nav a:hover already goes to #667eea - the icons pick that up
-        // for free, no separate icon CSS needed).
+        // "My Cards" is a hand-drawn inline SVG card outline (no image
+        // generation tool available) instead of a text link - uses
+        // stroke="currentColor" so it inherits the link's color
+        // automatically, including on hover (nav a:hover already goes to
+        // #667eea - the icon picks that up for free, no separate icon CSS
+        // needed). "My Offers" uses 📭, matching the same open-mailbox
+        // emoji offers.html already uses for its own empty-state icons -
+        // consistent with the page it links to instead of a separate
+        // custom badge.
         slot.innerHTML = `
             <div style="position: relative; display: flex; align-items: center; gap: 1.25rem;">
                 <a href="manage-cards.html" title="My Cards" style="display: flex; align-items: center;">
@@ -361,12 +363,7 @@ function renderAuthNav() {
                         <line x1="4" y1="18" x2="10" y2="18" stroke="currentColor" stroke-width="1.2"/>
                     </svg>
                 </a>
-                <a href="offers.html" title="My Offers" style="display: flex; align-items: center;">
-                    <svg width="46" height="20" viewBox="0 0 46 20" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="1" y="1" width="44" height="18" rx="4" fill="none" stroke="currentColor" stroke-width="1.3"/>
-                        <text x="23" y="14" font-size="9" font-weight="700" fill="currentColor" text-anchor="middle" font-family="-apple-system, sans-serif">OFFER</text>
-                    </svg>
-                </a>
+                <a href="offers.html" title="My Offers" style="display: flex; align-items: center; font-size: 1.15rem; line-height: 1;">📭</a>
                 <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle light/dark theme">☀️</button>
                 <a href="#" onclick="logout(); window.location.href='index.html'; return false;"
                    title="Log Out" style="font-size: 1.15rem; line-height: 1;">🚪</a>
