@@ -293,6 +293,34 @@ async function loginAccount(email, password) {
     return data;
 }
 
+// --- Password reset ---
+// Deliberately simple: reset link is emailed via the backend's own Gmail
+// SMTP sender (see backend/app/email_utils.py) - no separate email-service
+// account/API key for the frontend to know about, just these two endpoints.
+
+async function forgotPassword(email) {
+    const res = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || `Could not send reset email (${res.status})`);
+    return data;
+}
+
+async function resetPassword(token, newPassword) {
+    const res = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, newPassword }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || `Could not reset password (${res.status})`);
+    saveSession(data.accessToken, data.email, data.userId);
+    return data;
+}
+
 // Updates any nav element with id="authNavSlot" to show Sign In/Up or
 // My Cards/Log Out depending on session state. Call on every page's load.
 function renderAuthNav() {

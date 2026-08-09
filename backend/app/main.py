@@ -19,6 +19,7 @@ card object, so the frontend migration is a data-source swap, not a rewrite:
 """
 import json
 import re
+from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
@@ -26,11 +27,19 @@ from typing import List, Optional
 
 from .database import (
     get_connection, init_db, slugify, create_user, get_user_by_email, get_user_by_id,
+    update_user_password, create_password_reset, get_password_reset, mark_password_reset_used,
     create_offer, get_offers_received, get_offers_sent, get_offer_by_id, update_offer_status,
     get_cards_by_slugs, create_lot, get_lot_by_id, create_lot_offer,
     get_lot_offers_received, get_lot_offers_sent, get_lot_offer_by_id, update_lot_offer_status,
 )
 from .auth import hash_password, verify_password, create_access_token, decode_access_token
+from .email_utils import send_password_reset_email
+
+# Where password reset links point - the live frontend's reset page.
+# Hardcoded rather than an env var since the frontend origin is fixed
+# (cardscope.io / cardscopeio.github.io, see the CORS origins below).
+PASSWORD_RESET_BASE_URL = "https://cardscope.io/reset-password.html"
+PASSWORD_RESET_TOKEN_EXPIRY_HOURS = 1
 
 EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
@@ -136,6 +145,83 @@ def login(payload: UserLogin):
 @app.get("/api/auth/me")
 def read_current_user(current_user=Depends(get_current_user)):
     return row_to_user_public(current_user)
+
+
+# --- Password reset ---
+#
+# Forgot-password always returns the same generic response whether or not
+# the email is actually registered - never confirm/deny an email's
+# existence to an unauthenticated caller, that's a real account-enumeration
+# leak. The reset token is single-use (marked used immediately on success),
+# expires in 1 hour, and reset-password rejects it outright once used or
+# expired rather than trusting the client to only submit it once.
+
+class ForgotPasswordIn(BaseModel):
+    email: str
+
+
+class ResetPasswordIn(BaseModel):
+    token: str
+    newPassword: str
+
+    @field_validator("newPassword")
+    @classmethod
+    def password_long_enough(cls, v):
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters")
+        return v
+
+
+@app.post("/api/auth/forgot-password")
+def forgot_password(payload: ForgotPasswordIn):
+    generic_response = {"message": "If an account exists for that email, a reset link has been sent."}
+
+    user = get_user_by_email(payload.email)
+    if not user:
+        return generic_response
+
+    expires_at = (datetime.now(timezone.utc) + timedelta(hours=PASSWORD_RESET_TOKEN_EXPIRY_HOURS)) \
+        .strftime("%Y-%m-%d %H:%M:%S")
+    token = create_password_reset(user["id"], expires_at)
+    reset_link = f"{PASSWORD_RESET_BASE_URL}?token={token}"
+
+    sent = send_password_reset_email(user["email"], reset_link)
+    if not sent:
+        # Email is genuinely not configured/failed - don't lie and claim it
+        # was sent when it wasn't, but still don't leak whether the account
+        # exists. This is the one case worth a distinct message: it's an
+        # infrastructure problem, not a "check your email" moment.
+        raise HTTPException(
+            status_code=503,
+            detail="Could not send the reset email right now - please try again shortly or contact support.",
+        )
+    return generic_response
+
+
+@app.post("/api/auth/reset-password", response_model=TokenOut)
+def reset_password(payload: ResetPasswordIn):
+    reset = get_password_reset(payload.token)
+    if reset is None:
+        raise HTTPException(status_code=400, detail="This reset link is invalid.")
+    if reset["used"]:
+        raise HTTPException(status_code=400, detail="This reset link has already been used.")
+
+    expires_at = datetime.strptime(reset["expires_at"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) > expires_at:
+        raise HTTPException(status_code=400, detail="This reset link has expired - request a new one.")
+
+    user = get_user_by_id(reset["user_id"])
+    if user is None:
+        raise HTTPException(status_code=400, detail="This reset link is invalid.")
+
+    update_user_password(user["id"], hash_password(payload.newPassword))
+    mark_password_reset_used(payload.token)
+
+    # Log them straight in - they just proved account ownership via the
+    # emailed link, no reason to make them log in again with the password
+    # they just set.
+    token = create_access_token(user["id"])
+    return {"accessToken": token, "userId": user["id"], "email": user["email"]}
 
 
 def row_to_card(row) -> dict:

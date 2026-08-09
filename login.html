@@ -279,6 +279,21 @@
                     <input type="password" id="signInPassword" required autocomplete="current-password">
                 </div>
                 <button type="submit" class="btn-submit" id="signInBtn">Sign In</button>
+                <p style="text-align: center; margin-top: 1rem;">
+                    <a href="#" onclick="showForgotPassword(); return false;" style="color: #667eea; font-size: 0.9rem; text-decoration: none;">Forgot password?</a>
+                </p>
+            </form>
+
+            <form class="auth-form" id="forgotPasswordForm" onsubmit="handleForgotPassword(event)">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="forgotEmail" required autocomplete="email">
+                    <div class="input-hint">We'll email you a link to reset your password.</div>
+                </div>
+                <button type="submit" class="btn-submit" id="forgotBtn">Send Reset Link</button>
+                <p style="text-align: center; margin-top: 1rem;">
+                    <a href="#" onclick="switchTab('signin'); return false;" style="color: #667eea; font-size: 0.9rem; text-decoration: none;">Back to Sign In</a>
+                </p>
             </form>
 
             <form class="auth-form" id="signUpForm" onsubmit="handleSignUp(event)">
@@ -312,6 +327,14 @@
             document.getElementById('signUpTab').classList.toggle('active', tab === 'signup');
             document.getElementById('signInForm').classList.toggle('active', tab === 'signin');
             document.getElementById('signUpForm').classList.toggle('active', tab === 'signup');
+            document.getElementById('forgotPasswordForm').classList.remove('active');
+            hideMessages();
+        }
+
+        function showForgotPassword() {
+            document.getElementById('signInForm').classList.remove('active');
+            document.getElementById('signUpForm').classList.remove('active');
+            document.getElementById('forgotPasswordForm').classList.add('active');
             hideMessages();
         }
 
@@ -371,6 +394,25 @@
                 btn.disabled = false;
                 btn.textContent = 'Create Account';
             }
+        }
+
+        async function handleForgotPassword(event) {
+            event.preventDefault();
+            hideMessages();
+            const btn = document.getElementById('forgotBtn');
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+            try {
+                const data = await forgotPassword(document.getElementById('forgotEmail').value);
+                document.getElementById('successMessage').textContent =
+                    data.message || 'If an account exists for that email, a reset link has been sent.';
+                document.getElementById('successMessage').style.display = 'block';
+                document.getElementById('forgotPasswordForm').reset();
+            } catch (err) {
+                showError(err.message || 'Could not send reset email.');
+            }
+            btn.disabled = false;
+            btn.textContent = 'Send Reset Link';
         }
     </script>
 </body>

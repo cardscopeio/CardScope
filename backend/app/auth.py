@@ -2,9 +2,12 @@
 Authentication for CardScope.io: password hashing + JWT session tokens.
 
 Kept deliberately simple (stateless JWTs, no refresh-token rotation, no email
-verification/password reset flow yet) - this is a real but early-stage
-marketplace, not a bank. Revisit if/when password reset or email verification
-becomes a real need.
+verification yet) - this is a real but early-stage marketplace, not a bank.
+Password reset (2026-08-08) is handled via a separate single-use token table
+(see database.py's password_resets helpers + main.py's forgot-password/
+reset-password endpoints + email_utils.py for the actual email send) rather
+than anything in this file - this module only ever deals with the account's
+real password.
 """
 import os
 import bcrypt

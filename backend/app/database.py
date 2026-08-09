@@ -26,6 +26,7 @@ e.g. postgresql://user:pass@ep-xxxx.neon.tech/neondb?sslmode=require).
 import json
 import os
 import re
+import secrets
 import uuid
 import psycopg2
 import psycopg2.extras
@@ -128,6 +129,22 @@ def init_db():
             id TEXT PRIMARY KEY,
             email TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
+            created_at TEXT DEFAULT (to_char(now() at time zone 'utc', 'YYYY-MM-DD HH24:MI:SS'))
+        )
+        """
+    )
+    # Password reset: a single-use, time-limited token emailed to the
+    # account's address (see email_utils.py). token is the primary key
+    # directly (a long random URL-safe string via secrets.token_urlsafe) -
+    # no separate id needed since the token itself must already be
+    # unguessable to be safe as a reset credential.
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS password_resets (
+            token TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            used INTEGER DEFAULT 0,
             created_at TEXT DEFAULT (to_char(now() at time zone 'utc', 'YYYY-MM-DD HH24:MI:SS'))
         )
         """
@@ -239,6 +256,41 @@ def get_user_by_id(user_id):
     row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
     conn.close()
     return row
+
+
+def update_user_password(user_id, new_password_hash):
+    conn = get_connection()
+    conn.execute("UPDATE users SET password_hash = ? WHERE id = ?", (new_password_hash, user_id))
+    conn.commit()
+    conn.close()
+
+
+# --- Password reset helpers ---
+
+def create_password_reset(user_id, expires_at_iso):
+    conn = get_connection()
+    token = secrets.token_urlsafe(32)
+    conn.execute(
+        "INSERT INTO password_resets (token, user_id, expires_at) VALUES (?, ?, ?)",
+        (token, user_id, expires_at_iso),
+    )
+    conn.commit()
+    conn.close()
+    return token
+
+
+def get_password_reset(token):
+    conn = get_connection()
+    row = conn.execute("SELECT * FROM password_resets WHERE token = ?", (token,)).fetchone()
+    conn.close()
+    return row
+
+
+def mark_password_reset_used(token):
+    conn = get_connection()
+    conn.execute("UPDATE password_resets SET used = 1 WHERE token = ?", (token,))
+    conn.commit()
+    conn.close()
 
 
 # --- Offer helpers ---
