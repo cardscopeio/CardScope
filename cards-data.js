@@ -326,23 +326,36 @@ async function resetPassword(token, newPassword) {
 function renderAuthNav() {
     const slot = document.getElementById("authNavSlot");
     if (!slot) return;
+    // The theme toggle now renders here too (next to the logout icon when
+    // logged in, next to Sign In/Sign Up when not) instead of as a static
+    // button in each page's markup - keeps it in one place instead of
+    // duplicated across every page's HTML, and lets it sit naturally next
+    // to logout as requested. updateThemeToggleButtons() finds it fine
+    // either way since it selects by class, not id.
     if (isLoggedIn()) {
-        // Two-row layout: links + logout icon on top, the account email on
-        // its own smaller line underneath - crammed onto one line with
-        // "Log Out (email@...)" as text was pushing the header too wide.
+        // Single-line row (links + toggle + logout icon) so it stays
+        // aligned with the rest of the nav - the account email is
+        // absolutely positioned below so it doesn't add height to the row
+        // (that extra height was what pushed this row higher than the
+        // other nav items, since the whole block was being vertically
+        // centered against its own taller, two-row content).
         slot.innerHTML = `
-            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.15rem;">
-                <div style="display: flex; align-items: center; gap: 1.25rem;">
-                    <a href="manage-cards.html">My Cards</a>
-                    <a href="offers.html">My Offers</a>
-                    <a href="#" onclick="logout(); window.location.href='index.html'; return false;"
-                       title="Log Out" style="font-size: 1.15rem; line-height: 1;">🚪</a>
-                </div>
-                <span style="font-size: 0.7rem; color: var(--text-2);">${getAuthEmail()}</span>
+            <div style="position: relative; display: flex; align-items: center; gap: 1.25rem;">
+                <a href="manage-cards.html">My Cards</a>
+                <a href="offers.html">My Offers</a>
+                <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle light/dark theme">☀️</button>
+                <a href="#" onclick="logout(); window.location.href='index.html'; return false;"
+                   title="Log Out" style="font-size: 1.15rem; line-height: 1;">🚪</a>
+                <span style="position: absolute; top: 100%; right: 0; white-space: nowrap; font-size: 0.7rem; color: var(--text-2); padding-top: 0.15rem;">${getAuthEmail()}</span>
             </div>
         `;
     } else {
-        slot.innerHTML = `<a href="login.html">Sign In / Sign Up</a>`;
+        slot.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 1.25rem;">
+                <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle light/dark theme">☀️</button>
+                <a href="login.html">Sign In / Sign Up</a>
+            </div>
+        `;
     }
 }
 
