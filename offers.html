@@ -41,9 +41,18 @@
         }
 
         .logo {
-            height: 84px;
-            width: auto;
-            display: block;
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-2);
+            margin-top: -0.25rem;
         }
 
         nav {
@@ -318,7 +327,7 @@
             }
 
             .logo {
-                height: 56px;
+                font-size: 1.5rem;
             }
 
             header {
@@ -338,8 +347,11 @@
 <body>
     <header>
         <div class="header-content">
-            <a href="index.html" style="text-decoration: none; display: flex; align-items: center;">
-                <img src="logo.png" alt="CardScope.io" class="logo">
+            <a href="index.html" style="text-decoration: none;">
+                <div>
+                    <div class="logo">CardScope.io</div>
+                    <div class="logo-subtitle">Premium Baseball Card Marketplace</div>
+                </div>
             </a>
             <nav>
                 <a href="index.html">Browse</a>
