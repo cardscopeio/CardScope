@@ -129,10 +129,18 @@ def init_db():
             id TEXT PRIMARY KEY,
             email TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
+            paypal_email TEXT,
             created_at TEXT DEFAULT (to_char(now() at time zone 'utc', 'YYYY-MM-DD HH24:MI:SS'))
         )
         """
     )
+    # Migration for databases created before PayPal payments existed - see
+    # update_user_paypal_email() below. A seller sets this themselves (it's
+    # never required); when set, buyers pay them directly via a plain
+    # PayPal "Buy Now" button that posts straight to PayPal with this email
+    # as the payee. CardScope never touches the money, never sees a PayPal
+    # API credential, and never holds funds - by design, per Thor.
+    conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS paypal_email TEXT")
     # Password reset: a single-use, time-limited token emailed to the
     # account's address (see email_utils.py). token is the primary key
     # directly (a long random URL-safe string via secrets.token_urlsafe) -
@@ -275,6 +283,18 @@ def update_user_password(user_id, new_password_hash):
     conn.execute("UPDATE users SET password_hash = ? WHERE id = ?", (new_password_hash, user_id))
     conn.commit()
     conn.close()
+
+
+def update_user_paypal_email(user_id, paypal_email):
+    """Sets (or clears, if paypal_email is falsy) the PayPal address buyers
+    should pay directly - see the migration comment in init_db() above for
+    why this exists instead of a real payment-processing integration."""
+    conn = get_connection()
+    conn.execute("UPDATE users SET paypal_email = ? WHERE id = ?", (paypal_email or None, user_id))
+    conn.commit()
+    row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    conn.close()
+    return row
 
 
 # --- Password reset helpers ---

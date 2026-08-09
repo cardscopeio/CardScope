@@ -314,6 +314,39 @@
             transform: translateY(-2px);
         }
 
+        .paypal-buy-section {
+            margin-top: 3rem;
+        }
+
+        .paypal-buy-form {
+            margin: 0;
+        }
+
+        .btn-paypal {
+            width: 100%;
+            padding: 1.25rem 2rem;
+            background: linear-gradient(135deg, #0070ba 0%, #003087 100%);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 16px rgba(0, 112, 186, 0.3);
+        }
+
+        .btn-paypal:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 112, 186, 0.4);
+        }
+
+        .paypal-unavailable {
+            color: var(--text-2);
+            font-size: 0.85rem;
+            margin: 0;
+        }
+
         .offer-form-container {
             margin-top: 1.5rem;
             padding: 1.5rem;
@@ -512,6 +545,8 @@
                     <div class="price-value" id="priceValue">-</div>
                 </div>
 
+                <div class="paypal-buy-section" id="paypalBuySection"></div>
+
                 <div class="cta-buttons" id="ctaButtons">
                     <button class="btn-primary" id="makeOfferBtn" onclick="toggleOfferForm()">Make an Offer / Contact Seller</button>
                 </div>
@@ -612,6 +647,8 @@
                 document.getElementById('ctaButtons').style.display = 'none';
                 document.getElementById('ownListingNotice').style.display = 'block';
                 document.getElementById('editListingLink').href = `sell-cards.html?edit=${card.id}`;
+            } else {
+                loadPaypalBuySection(card);
             }
 
             document.getElementById('pageTitle').textContent = `${card.player} ${card.year} - CardScope.io`;
@@ -661,6 +698,31 @@
             } else {
                 document.getElementById('rarityValue').textContent = 'Variable Population';
                 document.getElementById('investmentValue').textContent = 'Entry Level Investment';
+            }
+        }
+
+        // Buy Now with PayPal - only shown for cards whose seller has set a
+        // PayPal email (manage-cards.html). The button posts straight to
+        // PayPal with that email as the payee (see paypalBuyButtonHtml() in
+        // cards-data.js) - CardScope never sees the payment.
+        async function loadPaypalBuySection(card) {
+            const section = document.getElementById('paypalBuySection');
+            if (!section) return;
+            try {
+                const sellerPaypalEmail = await fetchSellerPaypalEmail(card.userId);
+                if (sellerPaypalEmail) {
+                    section.innerHTML = paypalBuyButtonHtml({
+                        sellerPaypalEmail,
+                        itemName: `${card.player} ${card.year} ${card.brand}`.trim(),
+                        amountLike: card.price,
+                        buttonLabel: 'Buy Now with PayPal',
+                    });
+                } else {
+                    section.innerHTML = `<p class="paypal-unavailable">This seller hasn't set up PayPal yet — use "Make an Offer / Contact Seller" below to arrange payment.</p>`;
+                }
+            } catch (err) {
+                console.error(err);
+                // Non-fatal - Make an Offer still works even if this lookup fails.
             }
         }
 

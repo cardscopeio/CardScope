@@ -239,6 +239,37 @@
             background: rgba(239, 68, 68, 0.3);
         }
 
+        .paypal-pay-row {
+            margin-top: 0.75rem;
+        }
+
+        .paypal-pay-row .paypal-buy-form {
+            margin: 0;
+        }
+
+        .btn-paypal {
+            padding: 0.6rem 1.25rem;
+            border-radius: 6px;
+            border: none;
+            background: linear-gradient(135deg, #0070ba 0%, #003087 100%);
+            color: white;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-paypal:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 112, 186, 0.35);
+        }
+
+        .paypal-unavailable {
+            font-size: 0.8rem;
+            color: var(--text-2);
+            margin-top: 0.75rem;
+        }
+
         .empty-state {
             text-align: center;
             padding: 4rem 2rem;
@@ -362,6 +393,28 @@
         let currentTab = 'received';
         let receivedOffers = [];
         let sentOffers = [];
+        // sellerUserId -> paypalEmail | null, prefetched in loadOffers() for
+        // any accepted offer we sent, so render() can stay synchronous. See
+        // paypalBuyButtonHtml() in cards-data.js - the button posts straight
+        // to PayPal with the seller's own email, CardScope never involved.
+        let sellerPaypalEmails = {};
+
+        function paypalPayRowHtml(offer) {
+            if (offer.status !== 'accepted' || !offer.amount) return '';
+            const paypalEmail = sellerPaypalEmails[offer.sellerUserId];
+            if (!paypalEmail) {
+                return `<div class="paypal-unavailable">Seller hasn't set up PayPal yet — see <a href="contact.html">Contact</a> to arrange payment.</div>`;
+            }
+            const itemName = offer.kind === 'lot'
+                ? `${offer.cardSlugs.length}-card Bargain Box lot`
+                : offer.cardSlug.replace(/-/g, ' ');
+            return `<div class="paypal-pay-row">${paypalBuyButtonHtml({
+                sellerPaypalEmail: paypalEmail,
+                itemName,
+                amountLike: offer.amount,
+                buttonLabel: 'Pay with PayPal',
+            })}</div>`;
+        }
 
         function formatDate(isoString) {
             try {
@@ -418,6 +471,7 @@
                                 </div>
                             ` : ''}
                         </div>
+                        ${currentTab === 'sent' ? paypalPayRowHtml(offer) : ''}
                     </div>
                 `;
                 }
@@ -440,6 +494,7 @@
                             </div>
                         ` : ''}
                     </div>
+                    ${currentTab === 'sent' ? paypalPayRowHtml(offer) : ''}
                 </div>
             `;
             }).join('');
@@ -481,6 +536,20 @@
                     ...singleSent.map(o => ({ ...o, kind: 'single' })),
                     ...lotSent.map(o => ({ ...o, kind: 'lot' })),
                 ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+                // Prefetch the seller's PayPal email for any accepted offer
+                // we sent - that's the only place a "Pay with PayPal" button
+                // can appear, and fetching upfront keeps render() fast and
+                // synchronous instead of re-fetching on every re-render.
+                const sellerIds = [...new Set(
+                    sentOffers
+                        .filter(o => o.status === 'accepted' && o.amount)
+                        .map(o => o.sellerUserId)
+                )];
+                await Promise.all(sellerIds.map(async (id) => {
+                    if (sellerPaypalEmails[id] !== undefined) return;
+                    sellerPaypalEmails[id] = await fetchSellerPaypalEmail(id);
+                }));
             } catch (err) {
                 console.error(err);
                 if (err instanceof AuthRequiredError) {

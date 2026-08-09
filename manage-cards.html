@@ -119,6 +119,83 @@
             font-size: 0.9rem;
         }
 
+        .settings-card {
+            background: var(--tint-2);
+            border: 1px solid var(--tint-4);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .settings-card h2 {
+            font-size: 1.25rem;
+            margin-bottom: 0.25rem;
+            color: var(--text-1);
+        }
+
+        .settings-card-subtitle {
+            color: var(--text-2);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .paypal-input-row {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .paypal-input-row input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            background: var(--tint-1);
+            border: 1px solid var(--tint-4);
+            border-radius: 8px;
+            color: var(--text-1);
+            font-size: 0.95rem;
+            font-family: inherit;
+        }
+
+        .paypal-input-row input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn-save {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            white-space: nowrap;
+        }
+
+        .btn-save:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-save:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .paypal-status {
+            margin-top: 0.75rem;
+            font-size: 0.85rem;
+            min-height: 1.2em;
+        }
+
+        .paypal-status.success {
+            color: #22c55e;
+        }
+
+        .paypal-status.error {
+            color: #ef4444;
+        }
+
         .actions {
             margin-bottom: 2rem;
             display: flex;
@@ -260,6 +337,14 @@
                 font-size: 2rem;
             }
 
+            .paypal-input-row {
+                flex-direction: column;
+            }
+
+            .btn-save {
+                width: 100%;
+            }
+
             .stats {
                 grid-template-columns: 1fr;
             }
@@ -346,6 +431,18 @@
             </div>
         </div>
 
+        <div class="settings-card">
+            <h2>Payment Settings</h2>
+            <p class="settings-card-subtitle">Add your PayPal email so buyers can pay you directly for your cards — a Buy Now / Pay Now button appears on your listings once this is set. CardScope never touches the money.</p>
+            <form id="paypalForm" onsubmit="savePaypalEmail(event)">
+                <div class="paypal-input-row">
+                    <input type="email" id="paypalEmailInput" placeholder="you@example.com" autocomplete="email">
+                    <button type="submit" class="btn-save" id="paypalSaveBtn">Save</button>
+                </div>
+                <div class="paypal-status" id="paypalStatus"></div>
+            </form>
+        </div>
+
         <div class="actions">
             <button class="btn btn-danger" onclick="clearAllMyCards()">Delete All My Listings</button>
         </div>
@@ -368,6 +465,57 @@
         if (!isLoggedIn()) {
             window.location.href = 'login.html?next=manage-cards.html';
         }
+
+        async function loadPaypalSettings() {
+            try {
+                const me = await fetchMe();
+                document.getElementById('paypalEmailInput').value = me.paypalEmail || '';
+            } catch (err) {
+                console.error(err);
+                if (err instanceof AuthRequiredError) {
+                    logout();
+                    window.location.href = 'login.html?next=manage-cards.html';
+                }
+                // Otherwise non-fatal - the rest of the page (viewing/managing
+                // cards) still works even if this lookup fails; Save will
+                // surface its own error if the seller tries to use it.
+            }
+        }
+
+        async function savePaypalEmail(event) {
+            event.preventDefault();
+            const input = document.getElementById('paypalEmailInput');
+            const status = document.getElementById('paypalStatus');
+            const btn = document.getElementById('paypalSaveBtn');
+            const value = input.value.trim();
+
+            status.textContent = '';
+            status.className = 'paypal-status';
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            try {
+                await updateMyPaypalEmail(value);
+                status.textContent = value
+                    ? 'Saved — buyers can now pay you directly through PayPal.'
+                    : 'Cleared — your listings will no longer show a PayPal button.';
+                status.classList.add('success');
+            } catch (err) {
+                console.error(err);
+                if (err instanceof AuthRequiredError) {
+                    logout();
+                    window.location.href = 'login.html?next=manage-cards.html';
+                    return;
+                }
+                status.textContent = err.message || 'Could not save your PayPal email.';
+                status.classList.add('error');
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Save';
+        }
+
+        loadPaypalSettings();
 
         let myCards = [];
 

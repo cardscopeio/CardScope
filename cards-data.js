@@ -326,6 +326,75 @@ async function resetPassword(token, newPassword) {
     return data;
 }
 
+async function fetchMe() {
+    const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
+        headers: { ...authHeader() },
+    });
+    if (res.status === 401) throw new AuthRequiredError();
+    if (!res.ok) throw new Error(`Failed to load your account (${res.status})`);
+    return res.json();
+}
+
+// --- PayPal (buyer pays seller directly - CardScope never touches the
+// money, holds funds, or needs its own PayPal account for this) ---
+//
+// A seller optionally sets the PayPal email they want paid to
+// (updateMyPaypalEmail, surfaced on manage-cards.html). Any other page
+// that needs to let a buyer pay that seller looks that email up via
+// fetchSellerPaypalEmail(sellerUserId) - a public endpoint, since a buyer
+// needs it to pay and it reveals nothing but an address the seller chose
+// to publish for exactly this purpose - then renders paypalBuyButtonHtml().
+
+async function updateMyPaypalEmail(paypalEmail) {
+    const res = await fetch(`${API_BASE_URL}/api/me`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeader() },
+        body: JSON.stringify({ paypalEmail: paypalEmail || "" }),
+    });
+    if (res.status === 401) throw new AuthRequiredError();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || `Could not save your PayPal email (${res.status})`);
+    return data;
+}
+
+async function fetchSellerPaypalEmail(userId) {
+    if (!userId) return null;
+    const res = await fetch(`${API_BASE_URL}/api/users/${encodeURIComponent(userId)}/paypal-email`);
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => ({}));
+    return data.paypalEmail || null;
+}
+
+function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str == null ? "" : String(str);
+    return div.innerHTML;
+}
+
+// Renders a classic PayPal "Buy Now" button (PayPal Payments Standard): a
+// plain HTML form that POSTs straight to PayPal with the seller's own
+// PayPal email as the payee ("business"). Deliberately NOT PayPal's
+// Checkout JS SDK / Orders API - those route payment through whichever
+// PayPal Business account owns the API credentials (i.e. CardScope's),
+// which is exactly what was asked not to happen here. This form needs no
+// API keys and no backend involvement at all - the buyer pays the seller
+// directly and CardScope only renders the button.
+function paypalBuyButtonHtml({ sellerPaypalEmail, itemName, amountLike, buttonLabel }) {
+    if (!sellerPaypalEmail) return "";
+    const amount = String(amountLike).replace(/[^0-9.]/g, "");
+    if (!amount) return "";
+    return `
+        <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank" class="paypal-buy-form">
+            <input type="hidden" name="cmd" value="_xclick">
+            <input type="hidden" name="business" value="${escapeHtml(sellerPaypalEmail)}">
+            <input type="hidden" name="item_name" value="${escapeHtml(itemName)}">
+            <input type="hidden" name="amount" value="${escapeHtml(amount)}">
+            <input type="hidden" name="currency_code" value="USD">
+            <button type="submit" class="btn-paypal">${escapeHtml(buttonLabel || "Pay with PayPal")}</button>
+        </form>
+    `;
+}
+
 // Updates any nav element with id="authNavSlot" to show Sign In/Up or
 // My Cards/Log Out depending on session state. Call on every page's load.
 function renderAuthNav() {

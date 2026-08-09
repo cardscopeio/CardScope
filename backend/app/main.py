@@ -27,7 +27,8 @@ from typing import List, Optional
 
 from .database import (
     get_connection, init_db, slugify, create_user, get_user_by_email, get_user_by_id,
-    update_user_password, create_password_reset, get_password_reset, mark_password_reset_used,
+    update_user_password, update_user_paypal_email, create_password_reset, get_password_reset,
+    mark_password_reset_used,
     create_offer, get_offers_received, get_offers_sent, get_offer_by_id, update_offer_status,
     get_cards_by_slugs, create_lot, get_lot_by_id, create_lot_offer,
     get_lot_offers_received, get_lot_offers_sent, get_lot_offer_by_id, update_lot_offer_status,
@@ -106,7 +107,12 @@ class TokenOut(BaseModel):
 
 
 def row_to_user_public(row) -> dict:
-    return {"id": row["id"], "email": row["email"], "createdAt": row["created_at"]}
+    return {
+        "id": row["id"],
+        "email": row["email"],
+        "createdAt": row["created_at"],
+        "paypalEmail": row["paypal_email"],
+    }
 
 
 def get_current_user(authorization: Optional[str] = Header(None)):
@@ -145,6 +151,47 @@ def login(payload: UserLogin):
 @app.get("/api/auth/me")
 def read_current_user(current_user=Depends(get_current_user)):
     return row_to_user_public(current_user)
+
+
+# --- PayPal payout address ---
+#
+# CardScope never processes payments itself - a buyer who wants to pay for
+# a card pays the seller directly via a plain PayPal "Buy Now" button that
+# posts straight to PayPal with the seller's own PayPal email as the payee.
+# That means the only thing the backend needs to know is which PayPal email
+# each seller wants paid to. No PayPal API keys, no PayPal Business account
+# for CardScope itself, no money ever touches this backend or database -
+# by explicit request (Thor, 2026-08). Setting it is optional; sellers who
+# haven't set one just don't get a Buy Now / Pay Now button rendered.
+
+class PaypalEmailIn(BaseModel):
+    paypalEmail: str = Field(..., description="Empty string clears it")
+
+    @field_validator("paypalEmail")
+    @classmethod
+    def email_looks_valid_or_blank(cls, v):
+        v = v.strip()
+        if v and not EMAIL_REGEX.match(v):
+            raise ValueError("That doesn't look like a valid email address")
+        return v
+
+
+@app.patch("/api/me")
+def update_my_paypal_email(payload: PaypalEmailIn, current_user=Depends(get_current_user)):
+    row = update_user_paypal_email(current_user["id"], payload.paypalEmail or None)
+    return row_to_user_public(row)
+
+
+@app.get("/api/users/{user_id}/paypal-email")
+def get_seller_paypal_email(user_id: str):
+    """Public on purpose - a buyer needs this to pay a seller directly, and
+    it reveals nothing beyond an email address the seller opted to publish
+    for exactly this purpose (contrast with /api/auth/me, which is private
+    and requires auth)."""
+    user = get_user_by_id(user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="Seller not found")
+    return {"paypalEmail": user["paypal_email"]}
 
 
 # --- Password reset ---
