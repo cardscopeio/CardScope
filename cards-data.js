@@ -40,14 +40,19 @@ function updateThemeToggleButtons() {
 
 // Re-sync on pageshow, not just on initial load. Browsers can restore a
 // page from the back/forward cache (bfcache) when you hit Back - that
-// restores the DOM exactly as it was when you left the page, WITHOUT
-// re-running the inline <head> script that reads the current theme. Without
-// this, hitting Back after changing the theme on another page shows the
-// stale theme this page had last time you were on it, not your current
-// preference. Safe to run unconditionally (not just when event.persisted is
-// true) - re-applying the same theme is a harmless no-op.
+// restores the DOM (and JS state) exactly as it was at the moment you left
+// the page, WITHOUT re-running any of the page's setup logic. Originally
+// only re-applied the theme (stale theme after Back was the first symptom
+// found), but the same staleness hits the nav too - a bfcache-restored page
+// shows whatever "My Cards / My Offers / Log Out" markup it had rendered
+// last time you were on it, not the current version, which is exactly what
+// makes an old/pre-fix nav reappear after clicking into another page and
+// hitting Back. renderAuthNav() is safe to call unconditionally here too -
+// it fully replaces #authNavSlot's content every time, so re-running it is
+// a harmless no-op when nothing's actually changed.
 window.addEventListener("pageshow", function () {
     setTheme(getTheme());
+    renderAuthNav();
 });
 
 async function fetchAllCards() {
